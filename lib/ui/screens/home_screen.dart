@@ -27,6 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
     SystemChannels.lifecycle.setMessageHandler((msg) async {
       if (msg == AppLifecycleState.detached.toString()) {
         _windowService.showTaskbar();
+      } else if (msg == AppLifecycleState.resumed.toString()) {
+        // When app regains focus, check if we have an embedded app
+        if (_windowService.embeddedWindowHwnd != null) {
+          // Re-enable Alt+Tab blocking
+          _keyboardService.setBlockAltTab(true);
+          // Refocus embedded app
+          _windowService.focusEmbeddedApp();
+        }
       }
       return null;
     });
@@ -52,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final bool hasEmbeddedApp = _windowService.embeddedWindowHwnd != null;
+    final bool isLoading = _windowService.isLoading;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -75,18 +84,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(width: 12),
                 Text(
                   _windowService.currentAppName.isEmpty
-                      ? 'Office App Embedder'
-                      : 'Office App Embedder - ${_windowService.currentAppName}',
+                      ? 'Screenify'
+                      : 'Screenify - ${_windowService.currentAppName}',
                   style: const TextStyle(
                     color: Color(0xFF2C3E50),
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                // Show loading indicator in app bar when loading
+                if (isLoading)
+                  Container(
+                    margin: const EdgeInsets.only(left: 12),
+                    width: 20,
+                    height: 20,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  ),
               ],
             ),
             automaticallyImplyLeading: false,
             actions: [
-              if (hasEmbeddedApp)
+              if (hasEmbeddedApp && !isLoading)
                 Padding(
                   padding: const EdgeInsets.only(right: 8.0),
                   child: OutlinedButton.icon(
@@ -102,17 +122,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-              // Exit button - only enabled if no windows are open
+              // Exit button - only enabled if no windows are open and not loading
               Tooltip(
                 message:
-                    hasEmbeddedApp
+                    hasEmbeddedApp || isLoading
                         ? 'Close open applications first'
                         : 'Exit Application',
                 child: Container(
                   margin: const EdgeInsets.symmetric(horizontal: 8),
                   decoration: BoxDecoration(
                     color:
-                        hasEmbeddedApp
+                        hasEmbeddedApp || isLoading
                             ? Colors.grey.withOpacity(0.1)
                             : Colors.red.withOpacity(0.1),
                     shape: BoxShape.circle,
@@ -120,10 +140,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.exit_to_app),
                     onPressed:
-                        hasEmbeddedApp
-                            ? null // Disable when windows are open
+                        hasEmbeddedApp || isLoading
+                            ? null // Disable when windows are open or loading
                             : _windowService.exitApplication,
-                    color: hasEmbeddedApp ? Colors.grey[400] : Colors.red[700],
+                    color:
+                        hasEmbeddedApp || isLoading
+                            ? Colors.grey[400]
+                            : Colors.red[700],
                   ),
                 ),
               ),
@@ -147,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
               borderRadius: BorderRadius.circular(16),
               child: GestureDetector(
                 onTap: () {
-                  if (_windowService.embeddedWindowHwnd != null) {
+                  if (_windowService.embeddedWindowHwnd != null && !isLoading) {
                     SetForegroundWindow(_windowService.embeddedWindowHwnd!);
                     SetFocus(_windowService.embeddedWindowHwnd!);
                     _windowService.hideTaskbar();
@@ -156,31 +179,43 @@ class _HomeScreenState extends State<HomeScreen> {
                 behavior: HitTestBehavior.translucent,
                 child: Row(
                   children: [
-                    AppSidebar(
-                      onEmbedWord:
-                          () => _windowService.embedApplication(
-                            'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
-                            'Word',
-                            setState,
-                          ),
-                      onEmbedExcel:
-                          () => _windowService.embedApplication(
-                            'C:\\Program Files (x86)\\Microsoft Office\\Office12\\EXCEL.EXE',
-                            'Excel',
-                            setState,
-                          ),
-                      onEmbedPowerPoint:
-                          () => _windowService.embedApplication(
-                            'C:\\Program Files (x86)\\Microsoft Office\\Office12\\POWERPNT.EXE',
-                            'PowerPoint',
-                            setState,
-                          ),
+                    // Sidebar is disabled when loading
+                    AbsorbPointer(
+                      absorbing: isLoading,
+                      child: Opacity(
+                        opacity: isLoading ? 0.5 : 1.0,
+                        child: AppSidebar(
+                          onEmbedWord:
+                              () => _windowService.embedApplication(
+                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
+                                'Word',
+                                setState,
+                              ),
+                          onEmbedExcel:
+                              () => _windowService.embedApplication(
+                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\EXCEL.EXE',
+                                'Excel',
+                                setState,
+                              ),
+                          onEmbedPowerPoint:
+                              () => _windowService.embedApplication(
+                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\POWERPNT.EXE',
+                                'PowerPoint',
+                                setState,
+                              ),
+                        ),
+                      ),
                     ),
+
+                    // Pass loading state to EmbeddedAppContainer
                     EmbeddedAppContainer(
                       embeddedAreaKey: _windowService.embeddedAreaKey,
                       hasEmbeddedApp: hasEmbeddedApp,
+                      currentAppName: _windowService.currentAppName,
+                      isLoading: isLoading,
                       onMouseEnter: () {
-                        if (_windowService.embeddedWindowHwnd != null) {
+                        if (_windowService.embeddedWindowHwnd != null &&
+                            !isLoading) {
                           SetForegroundWindow(
                             _windowService.embeddedWindowHwnd!,
                           );
@@ -188,6 +223,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           _windowService.hideTaskbar();
                         }
                       },
+                      onRefreshApp:
+                          hasEmbeddedApp && !isLoading
+                              ? () {
+                                // Optional refresh functionality
+                                final currentApp =
+                                    _windowService.currentAppName;
+                                final appPaths = {
+                                  'Word':
+                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
+                                  'Excel':
+                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\EXCEL.EXE',
+                                  'PowerPoint':
+                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\POWERPNT.EXE',
+                                };
+
+                                if (appPaths.containsKey(currentApp)) {
+                                  _windowService.closeEmbeddedApplication();
+                                  // Brief delay to allow proper cleanup
+                                  Future.delayed(
+                                    const Duration(milliseconds: 300),
+                                    () {
+                                      _windowService.embedApplication(
+                                        appPaths[currentApp]!,
+                                        currentApp,
+                                        setState,
+                                      );
+                                    },
+                                  );
+                                }
+                              }
+                              : null,
                     ),
                   ],
                 ),

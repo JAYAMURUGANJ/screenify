@@ -19,10 +19,16 @@ class WindowService {
   String currentAppName = '';
   final GlobalKey embeddedAreaKey = GlobalKey();
 
+  // Add loading state
+  bool isLoading = false;
+
   void focusEmbeddedApp() {
     if (embeddedWindowHwnd == null) return;
 
     final int hwnd = embeddedWindowHwnd!;
+
+    // Check if the app is already in focus to avoid unnecessary focus changes
+    if (GetForegroundWindow() == hwnd) return;
 
     // Make sure the window is visible and not minimized
     if (IsIconic(hwnd) != 0) {
@@ -39,8 +45,13 @@ class WindowService {
     );
     final int embeddedThread = GetWindowThreadProcessId(hwnd, nullptr);
 
+    // Only attach if the threads are different
+    final bool needsAttach = foregroundThread != embeddedThread;
+
     // Attach input queues so that focus can transfer smoothly
-    AttachThreadInput(foregroundThread, embeddedThread, TRUE);
+    if (needsAttach) {
+      AttachThreadInput(foregroundThread, embeddedThread, TRUE);
+    }
 
     // Try forcing the window to the front
     SetForegroundWindow(hwnd);
@@ -48,7 +59,12 @@ class WindowService {
     SetFocus(hwnd);
 
     // Detach thread input after setting focus
-    AttachThreadInput(foregroundThread, embeddedThread, FALSE);
+    if (needsAttach) {
+      AttachThreadInput(foregroundThread, embeddedThread, FALSE);
+    }
+
+    // Hide taskbar to keep focus on the embedded app
+    hideTaskbar();
   }
 
   // Add a method to hide the taskbar
@@ -91,6 +107,11 @@ class WindowService {
     Function setState,
   ) async {
     try {
+      // Set loading state to true
+      setState(() {
+        isLoading = true;
+      });
+
       debugPrint('Attempting to embed $appName from path: $exePath');
 
       // Close any existing embedded application
@@ -187,8 +208,9 @@ class WindowService {
               SetForegroundWindow(hwnd);
               SetFocus(hwnd);
 
-              // Force UI update to ensure close button appears
+              // Turn off loading state
               setState(() {
+                isLoading = false;
                 // Just trigger a rebuild to ensure UI is updated
                 debugPrint('Forcing UI update after embedding $appName');
               });
@@ -199,12 +221,19 @@ class WindowService {
               });
             }
           } else {
-            debugPrint('Error: Flutter window not found.');
+            setState(() {
+              currentAppName = '';
+              isLoading = false;
+              debugPrint(
+                'Failed to find Flutter window for $appName, reset currentAppName',
+              );
+            });
           }
         });
       } else {
         setState(() {
           currentAppName = '';
+          isLoading = false;
           debugPrint(
             'Failed to find window for $appName, reset currentAppName',
           );
@@ -214,6 +243,7 @@ class WindowService {
     } catch (e) {
       setState(() {
         currentAppName = '';
+        isLoading = false;
         debugPrint('Error occurred, reset currentAppName');
       });
       debugPrint('Error opening application: $e');
@@ -261,8 +291,8 @@ class WindowService {
         Future.delayed(const Duration(seconds: 1), () {
           try {
             if (currentProcess != null) {
-              // Use the correct signal for termination
-              currentProcess!.kill(ProcessSignal.sigterm);
+              // Use Process.kill without specific signal to avoid SIGTERM issues
+              currentProcess!.kill();
               currentProcess = null;
               debugPrint('Process terminated');
             }
@@ -276,6 +306,7 @@ class WindowService {
 
       embeddedWindowHwnd = null;
       currentAppName = '';
+      isLoading = false;
       debugPrint('Reset embeddedWindowHwnd and currentAppName');
     }
   }
