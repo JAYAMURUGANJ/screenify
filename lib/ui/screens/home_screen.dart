@@ -4,6 +4,7 @@ import 'package:win32/win32.dart';
 
 import '../../services/keyboard_service.dart';
 import '../../services/window_service.dart';
+import '../../utils/enum_helper.dart'; // Make sure to import the enum
 import '../widgets/app_sidebar.dart';
 import '../widgets/embedded_app_container.dart';
 
@@ -17,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final WindowService _windowService = WindowService();
   final KeyboardService _keyboardService = KeyboardService();
+  // Reference to the sidebar
+  final GlobalKey<AppSidebarState> _sidebarKey = GlobalKey<AppSidebarState>();
 
   @override
   void initState() {
@@ -55,6 +58,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _windowService.showTaskbar();
 
     super.dispose();
+  }
+
+  // Method to close the embedded application and clear sidebar selection
+  void _closeEmbeddedApp() {
+    _windowService.closeEmbeddedApplication();
+
+    // Clear the selection in the sidebar using the onSelectionChanged callback
+    if (_sidebarKey.currentState != null) {
+      _sidebarKey.currentState!.clearSelection();
+    }
+
+    setState(() {});
   }
 
   @override
@@ -111,10 +126,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.only(right: 8.0),
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _windowService.closeEmbeddedApplication();
-                      setState(() {});
-                    },
+                    onPressed: _closeEmbeddedApp, // Use the new method
                     label: Text('Close ${_windowService.currentAppName}'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red[700],
@@ -185,6 +197,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Opacity(
                         opacity: isLoading ? 0.5 : 1.0,
                         child: AppSidebar(
+                          key: _sidebarKey, // Add key to access sidebar state
                           onEmbedWord:
                               () => _windowService.embedApplication(
                                 'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
@@ -203,6 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 'PowerPoint',
                                 setState,
                               ),
+                          onSelectionChanged: (selectedApp) {},
                         ),
                       ),
                     ),
@@ -239,7 +253,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 };
 
                                 if (appPaths.containsKey(currentApp)) {
-                                  _windowService.closeEmbeddedApplication();
+                                  // Close the app and clear selection
+                                  _closeEmbeddedApp();
                                   // Brief delay to allow proper cleanup
                                   Future.delayed(
                                     const Duration(milliseconds: 300),
@@ -249,6 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         currentApp,
                                         setState,
                                       );
+                                      // New app selection will set the highlight automatically
                                     },
                                   );
                                 }

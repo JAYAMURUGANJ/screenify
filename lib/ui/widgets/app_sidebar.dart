@@ -1,16 +1,52 @@
 import 'package:flutter/material.dart';
 
-class AppSidebar extends StatelessWidget {
+import '../../utils/enum_helper.dart';
+
+class AppSidebar extends StatefulWidget {
   final VoidCallback onEmbedWord;
   final VoidCallback onEmbedExcel;
   final VoidCallback onEmbedPowerPoint;
+  final SelectedApp initialSelection;
+  final Function(SelectedApp) onSelectionChanged;
 
   const AppSidebar({
     super.key,
     required this.onEmbedWord,
     required this.onEmbedExcel,
     required this.onEmbedPowerPoint,
+    this.initialSelection = SelectedApp.none,
+    required this.onSelectionChanged,
   });
+
+  @override
+  AppSidebarState createState() => AppSidebarState();
+}
+
+// Make the state class public (not private with _)
+class AppSidebarState extends State<AppSidebar> {
+  late SelectedApp _selectedApp;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedApp = widget.initialSelection;
+  }
+
+  void _selectApp(SelectedApp app, VoidCallback onEmbed) {
+    setState(() {
+      _selectedApp = app;
+    });
+    widget.onSelectionChanged(app);
+    onEmbed();
+  }
+
+  // Public method to clear selection (called when app is closed)
+  void clearSelection() {
+    setState(() {
+      _selectedApp = SelectedApp.none;
+    });
+    widget.onSelectionChanged(SelectedApp.none);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +99,8 @@ class AppSidebar extends StatelessWidget {
               subtitle: 'Document editing',
               icon: Icons.description,
               color: Colors.blue,
-              onPressed: onEmbedWord,
+              onPressed: () => _selectApp(SelectedApp.word, widget.onEmbedWord),
+              isSelected: _selectedApp == SelectedApp.word,
             ),
             const SizedBox(height: 16),
             _buildAppButton(
@@ -71,7 +108,9 @@ class AppSidebar extends StatelessWidget {
               subtitle: 'Spreadsheets and data',
               icon: Icons.table_chart,
               color: Colors.green,
-              onPressed: onEmbedExcel,
+              onPressed:
+                  () => _selectApp(SelectedApp.excel, widget.onEmbedExcel),
+              isSelected: _selectedApp == SelectedApp.excel,
             ),
             const SizedBox(height: 16),
             _buildAppButton(
@@ -79,7 +118,12 @@ class AppSidebar extends StatelessWidget {
               subtitle: 'Presentations and slides',
               icon: Icons.slideshow,
               color: Colors.orange,
-              onPressed: onEmbedPowerPoint,
+              onPressed:
+                  () => _selectApp(
+                    SelectedApp.powerPoint,
+                    widget.onEmbedPowerPoint,
+                  ),
+              isSelected: _selectedApp == SelectedApp.powerPoint,
             ),
             const Spacer(),
             const Divider(),
@@ -115,15 +159,20 @@ class AppSidebar extends StatelessWidget {
     required IconData icon,
     required Color color,
     required VoidCallback onPressed,
+    required bool isSelected,
   }) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.white,
+        border: isSelected ? Border.all(color: color, width: 2) : null,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 5,
+            color:
+                isSelected
+                    ? color.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.05),
+            blurRadius: isSelected ? 8 : 5,
             offset: const Offset(0, 2),
           ),
         ],
@@ -141,7 +190,7 @@ class AppSidebar extends StatelessWidget {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withOpacity(isSelected ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 28),
@@ -153,24 +202,33 @@ class AppSidebar extends StatelessWidget {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF2C3E50),
+                          color:
+                              isSelected
+                                  ? color.darken(0.2)
+                                  : const Color(0xFF2C3E50),
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         subtitle,
-                        style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color:
+                              isSelected
+                                  ? color.withOpacity(0.8)
+                                  : Colors.grey[600],
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  size: 16,
-                  color: Color(0xFFBDC3C7),
+                Icon(
+                  isSelected ? Icons.check_circle : Icons.arrow_forward_ios,
+                  size: isSelected ? 20 : 16,
+                  color: isSelected ? color : const Color(0xFFBDC3C7),
                 ),
               ],
             ),
@@ -178,5 +236,15 @@ class AppSidebar extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+// Extension to darken colors
+extension ColorExtension on Color {
+  Color darken(double amount) {
+    assert(amount >= 0 && amount <= 1);
+    final hsl = HSLColor.fromColor(this);
+    final hslDark = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    return hslDark.toColor();
   }
 }
