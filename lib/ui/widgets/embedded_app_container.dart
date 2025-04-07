@@ -6,7 +6,8 @@ class EmbeddedAppContainer extends StatelessWidget {
   final String currentAppName;
   final VoidCallback onMouseEnter;
   final VoidCallback? onRefreshApp;
-  final bool isLoading; // Add loading indicator flag
+  final bool isLoading;
+  final String? loadingMessage; // New parameter for custom loading messages
 
   const EmbeddedAppContainer({
     super.key,
@@ -15,7 +16,8 @@ class EmbeddedAppContainer extends StatelessWidget {
     required this.currentAppName,
     required this.onMouseEnter,
     this.onRefreshApp,
-    required this.isLoading, // New required parameter
+    required this.isLoading,
+    this.loadingMessage, // Optional parameter for custom message
   });
 
   @override
@@ -75,9 +77,13 @@ class EmbeddedAppContainer extends StatelessWidget {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        currentAppName.isEmpty
-                            ? 'Loading application...'
-                            : 'Loading $currentAppName...',
+                        // Use custom message if provided, otherwise use default messages
+                        loadingMessage ??
+                            (currentAppName.isEmpty
+                                ? 'Loading application...'
+                                : currentAppName.startsWith('Closing')
+                                ? currentAppName
+                                : 'Loading $currentAppName...'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -85,9 +91,15 @@ class EmbeddedAppContainer extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      const Text(
-                        'Please wait while the application initializes',
-                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      Text(
+                        loadingMessage != null &&
+                                loadingMessage!.contains("closing")
+                            ? "Application closing, please wait"
+                            : 'Please wait while the application initializes',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),

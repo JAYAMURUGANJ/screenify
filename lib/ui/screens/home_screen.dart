@@ -4,7 +4,6 @@ import 'package:win32/win32.dart';
 
 import '../../services/keyboard_service.dart';
 import '../../services/window_service.dart';
-import '../../utils/enum_helper.dart'; // Make sure to import the enum
 import '../widgets/app_sidebar.dart';
 import '../widgets/embedded_app_container.dart';
 
@@ -18,6 +17,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final WindowService _windowService = WindowService();
   final KeyboardService _keyboardService = KeyboardService();
+  String _loadingMessage = '';
   // Reference to the sidebar
   final GlobalKey<AppSidebarState> _sidebarKey = GlobalKey<AppSidebarState>();
 
@@ -60,16 +60,45 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
+  // Method to handle exit application with loading state
+  void _exitApplication() {
+    setState(() {
+      // Set loading state to true when beginning to exit
+      _windowService.isLoading = true;
+      _loadingMessage = "Application closing, please wait...";
+    });
+
+    // Show loading indicator while exiting
+    Future.delayed(const Duration(milliseconds: 800), () {
+      _windowService.exitApplication();
+      // App will terminate, so we don't need to set loading back to false
+    });
+  }
+
   // Method to close the embedded application and clear sidebar selection
   void _closeEmbeddedApp() {
-    _windowService.closeEmbeddedApplication();
+    setState(() {
+      // Set loading state to true when beginning to close the app
+      _windowService.isLoading = true;
+      _loadingMessage =
+          "Closing ${_windowService.currentAppName}, please wait...";
+    });
 
-    // Clear the selection in the sidebar using the onSelectionChanged callback
-    if (_sidebarKey.currentState != null) {
-      _sidebarKey.currentState!.clearSelection();
-    }
+    // Show loading indicator while closing the app
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _windowService.closeEmbeddedApplication();
 
-    setState(() {});
+      // Clear the selection in the sidebar using the onSelectionChanged callback
+      if (_sidebarKey.currentState != null) {
+        _sidebarKey.currentState!.clearSelection();
+      }
+
+      // Set loading state back to false after closing is complete
+      setState(() {
+        _windowService.isLoading = false;
+        _loadingMessage = "";
+      });
+    });
   }
 
   @override
@@ -154,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     onPressed:
                         hasEmbeddedApp || isLoading
                             ? null // Disable when windows are open or loading
-                            : _windowService.exitApplication,
+                            : _exitApplication, // Use the new method with loading message
                     color:
                         hasEmbeddedApp || isLoading
                             ? Colors.grey[400]
@@ -222,11 +251,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
 
                     // Pass loading state to EmbeddedAppContainer
+                    // In the build method, update the EmbeddedAppContainer instantiation:
                     EmbeddedAppContainer(
                       embeddedAreaKey: _windowService.embeddedAreaKey,
                       hasEmbeddedApp: hasEmbeddedApp,
                       currentAppName: _windowService.currentAppName,
                       isLoading: isLoading,
+                      loadingMessage:
+                          _loadingMessage, // Add the loading message
                       onMouseEnter: () {
                         if (_windowService.embeddedWindowHwnd != null &&
                             !isLoading) {
