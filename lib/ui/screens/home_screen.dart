@@ -7,6 +7,8 @@ import '../../services/window_service.dart';
 import '../widgets/app_sidebar.dart';
 import '../widgets/embedded_app_container.dart';
 
+enum LoadingState { idle, loading, closing }
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -18,27 +20,49 @@ class _HomeScreenState extends State<HomeScreen> {
   final WindowService _windowService = WindowService();
   final KeyboardService _keyboardService = KeyboardService();
   String _loadingMessage = '';
+  String msOfficePath = "C:\\Program Files (x86)\\Microsoft Office\\Office12";
+  LoadingState _loadingState = LoadingState.idle;
+
+  bool get isLoading => _loadingState != LoadingState.idle;
+
+  void _setLoadingState(LoadingState state) {
+    setState(() {
+      _loadingState = state;
+    });
+  }
+
+  void _handleLifecycleEvent(String? msg) {
+    if (msg == AppLifecycleState.detached.toString()) {
+      _windowService.showTaskbar();
+    } else if (msg == AppLifecycleState.resumed.toString()) {
+      if (_windowService.embeddedWindowHwnd != null) {
+        _keyboardService.setBlockAltTab(true);
+        _windowService.focusEmbeddedApp();
+      }
+    }
+  }
+
   // Reference to the sidebar
   final GlobalKey<AppSidebarState> _sidebarKey = GlobalKey<AppSidebarState>();
+
+  // Example: Load paths from a configuration file
+  late final Map<String, String> appPaths;
 
   @override
   void initState() {
     super.initState();
     _keyboardService.registerKeyboardHandler();
 
+    // Initialize appPaths with instance member
+    appPaths = {
+      'Word': "$msOfficePath\\WINWORD.EXE",
+      'Excel': "$msOfficePath\\EXCEL.EXE",
+      'PowerPoint': "$msOfficePath\\POWERPNT.EXE",
+    };
+
     // Set up app lifecycle monitoring
     SystemChannels.lifecycle.setMessageHandler((msg) async {
-      if (msg == AppLifecycleState.detached.toString()) {
-        _windowService.showTaskbar();
-      } else if (msg == AppLifecycleState.resumed.toString()) {
-        // When app regains focus, check if we have an embedded app
-        if (_windowService.embeddedWindowHwnd != null) {
-          // Re-enable Alt+Tab blocking
-          _keyboardService.setBlockAltTab(true);
-          // Refocus embedded app
-          _windowService.focusEmbeddedApp();
-        }
-      }
+      _handleLifecycleEvent(msg);
       return null;
     });
 
@@ -62,49 +86,126 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Method to handle exit application with loading state
   void _exitApplication() {
-    setState(() {
-      // Set loading state to true when beginning to exit
-      _windowService.isLoading = true;
-      _loadingMessage = "Application closing, please wait...";
-    });
+    _setLoadingState(LoadingState.closing);
+    _loadingMessage = "Application closing, please wait...";
 
     // Show loading indicator while exiting
     Future.delayed(const Duration(milliseconds: 800), () {
       _windowService.exitApplication();
-      // App will terminate, so we don't need to set loading back to false
+      // App will terminate, so we don't need to set loading back to idle
     });
   }
 
   // Method to close the embedded application and clear sidebar selection
   void _closeEmbeddedApp() {
-    setState(() {
-      // Set loading state to true when beginning to close the app
-      _windowService.isLoading = true;
-      _loadingMessage =
-          "Closing ${_windowService.currentAppName}, please wait...";
-    });
+    if (_windowService.embeddedWindowHwnd != null) {
+      final currentEmbeddedHwnd = _windowService.embeddedWindowHwnd;
 
-    // Show loading indicator while closing the app
-    Future.delayed(const Duration(milliseconds: 500), () {
-      _windowService.closeEmbeddedApplication();
-
-      // Clear the selection in the sidebar using the onSelectionChanged callback
-      if (_sidebarKey.currentState != null) {
-        _sidebarKey.currentState!.clearSelection();
+      // Minimize the embedded window
+      if (currentEmbeddedHwnd != null) {
+        ShowWindow(currentEmbeddedHwnd, SW_MINIMIZE);
       }
 
-      // Set loading state back to false after closing is complete
-      setState(() {
-        _windowService.isLoading = false;
-        _loadingMessage = "";
-      });
-    });
+      // Bring Flutter window to the foreground
+      final flutterWindow = GetActiveWindow();
+      if (flutterWindow != 0) {
+        SetForegroundWindow(flutterWindow);
+      } else {
+        debugPrint('Failed to bring Flutter window to the foreground.');
+      }
+
+      // Show confirmation dialog
+      _showConfirmationDialog(
+        context: context,
+        title: 'Close ${_windowService.currentAppName}?',
+        content:
+            'Please save your work before closing. Any unsaved changes will be lost.',
+        onClose: () {
+          _setLoadingState(LoadingState.closing);
+
+          Future.delayed(const Duration(milliseconds: 500), () {
+            try {
+              _windowService.closeEmbeddedApplication();
+              _sidebarKey.currentState?.clearSelection();
+            } catch (e) {
+              debugPrint('Error closing embedded application: $e');
+            } finally {
+              _setLoadingState(LoadingState.idle);
+            }
+          });
+        },
+        onCancel: () {
+          // Restore the embedded app window
+          if (currentEmbeddedHwnd != null) {
+            ShowWindow(currentEmbeddedHwnd, SW_RESTORE);
+            SetForegroundWindow(currentEmbeddedHwnd);
+          }
+        },
+      );
+    } else {
+      // Show simpler dialog if no embedded app
+      _showConfirmationDialog(
+        context: context,
+        title: 'Close Application?',
+        content: 'Are you sure you want to close this application?',
+        onClose: () {
+          _setLoadingState(LoadingState.closing);
+
+          Future.delayed(const Duration(milliseconds: 500), () {
+            try {
+              _windowService.closeEmbeddedApplication();
+              _sidebarKey.currentState?.clearSelection();
+            } catch (e) {
+              debugPrint('Error closing application: $e');
+            } finally {
+              _setLoadingState(LoadingState.idle);
+            }
+          });
+        },
+      );
+    }
+  }
+
+  void _showConfirmationDialog({
+    required BuildContext context,
+    required String title,
+    required String content,
+    required VoidCallback onClose,
+    VoidCallback? onCancel,
+  }) {
+    showDialog(
+      context: context,
+      useRootNavigator: true,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withOpacity(0.7),
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                if (onCancel != null) onCancel();
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                onClose();
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final bool hasEmbeddedApp = _windowService.embeddedWindowHwnd != null;
-    final bool isLoading = _windowService.isLoading;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
@@ -225,27 +326,45 @@ class _HomeScreenState extends State<HomeScreen> {
                       absorbing: isLoading,
                       child: Opacity(
                         opacity: isLoading ? 0.5 : 1.0,
-                        child: AppSidebar(
-                          key: _sidebarKey, // Add key to access sidebar state
-                          onEmbedWord:
-                              () => _windowService.embedApplication(
-                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
+                        child: // Update the AppSidebar in the HomeScreen's build method
+                            AppSidebar(
+                          key:
+                              _sidebarKey, // Keep the key to access sidebar state
+                          onEmbedWord: () {
+                            try {
+                              _windowService.embedApplication(
+                                appPaths['Word']!,
                                 'Word',
                                 setState,
-                              ),
-                          onEmbedExcel:
-                              () => _windowService.embedApplication(
-                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\EXCEL.EXE',
+                              );
+                            } catch (e) {
+                              debugPrint('Failed to embed application: $e');
+                            }
+                          },
+                          onEmbedExcel: () {
+                            try {
+                              _windowService.embedApplication(
+                                appPaths['Excel']!,
                                 'Excel',
                                 setState,
-                              ),
-                          onEmbedPowerPoint:
-                              () => _windowService.embedApplication(
-                                'C:\\Program Files (x86)\\Microsoft Office\\Office12\\POWERPNT.EXE',
+                              );
+                            } catch (e) {
+                              debugPrint('Failed to embed application: $e');
+                            }
+                          },
+                          onEmbedPowerPoint: () {
+                            try {
+                              _windowService.embedApplication(
+                                appPaths['PowerPoint']!,
                                 'PowerPoint',
                                 setState,
-                              ),
+                              );
+                            } catch (e) {
+                              debugPrint('Failed to embed application: $e');
+                            }
+                          },
                           onSelectionChanged: (selectedApp) {},
+                          isLoading: isLoading, // Pass the loading state
                         ),
                       ),
                     ),
@@ -275,14 +394,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                 // Optional refresh functionality
                                 final currentApp =
                                     _windowService.currentAppName;
-                                final appPaths = {
-                                  'Word':
-                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
-                                  'Excel':
-                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\EXCEL.EXE',
-                                  'PowerPoint':
-                                      'C:\\Program Files (x86)\\Microsoft Office\\Office12\\POWERPNT.EXE',
-                                };
 
                                 if (appPaths.containsKey(currentApp)) {
                                   // Close the app and clear selection
@@ -291,11 +402,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Future.delayed(
                                     const Duration(milliseconds: 300),
                                     () {
-                                      _windowService.embedApplication(
-                                        appPaths[currentApp]!,
-                                        currentApp,
-                                        setState,
-                                      );
+                                      try {
+                                        _windowService.embedApplication(
+                                          appPaths[currentApp]!,
+                                          currentApp,
+                                          setState,
+                                        );
+                                      } catch (e) {
+                                        debugPrint(
+                                          'Failed to embed application: $e',
+                                        );
+                                      }
                                       // New app selection will set the highlight automatically
                                     },
                                   );
