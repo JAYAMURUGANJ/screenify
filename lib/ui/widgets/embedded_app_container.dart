@@ -32,7 +32,7 @@ class EmbeddedAppContainer extends StatelessWidget {
               key: embeddedAreaKey,
               color: Colors.grey[200],
               child:
-                  !hasEmbeddedApp
+                  !hasEmbeddedApp && !isLoading
                       ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -94,7 +94,7 @@ class EmbeddedAppContainer extends StatelessWidget {
                       Text(
                         loadingMessage != null &&
                                 loadingMessage!.contains("closing")
-                            ? "Application closing, please wait"
+                            ? "Please wait while the application closes. \nThis may take a few seconds."
                             : 'Please wait while the application initializes',
                         style: const TextStyle(
                           color: Colors.white70,
