@@ -72,7 +72,7 @@ class EmbeddedAppContainer extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
                         strokeWidth: 4,
                       ),
                       const SizedBox(height: 20),
@@ -85,7 +85,7 @@ class EmbeddedAppContainer extends StatelessWidget {
                                 ? currentAppName
                                 : 'Loading $currentAppName...'),
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: Colors.amber,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),

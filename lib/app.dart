@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:screenify/ui/screens/splash_screen.dart';
 
-import 'ui/screens/home_screen.dart';
+import 'domain/model/candidate.dart';
+import 'ui/screens/dashboard_screen.dart';
+import 'ui/screens/login_screen.dart';
+import 'ui/screens/registration_screen.dart';
+import 'ui/screens/tech_assesment_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -14,7 +19,23 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: const HomeScreen(),
+      initialRoute: '/',
+      routes: {
+        '/aa': (context) => const SplashScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/register': (context) => const RegistrationScreen(),
+        '/':
+            (context) => DashboardScreen(
+              candidate: Candidate(
+                aadhar: '293008805934',
+                name: 'Jai',
+                email: 'jai@gmail.com',
+                phone: '1234567890',
+                dob: '1990-01-01',
+              ),
+            ),
+        '/technicalAssesment': (context) => const TechnicalAssesment(),
+      },
     );
   }
 }
