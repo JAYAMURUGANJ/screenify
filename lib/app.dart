@@ -3,6 +3,7 @@ import 'package:screenify/ui/screens/splash_screen.dart';
 
 import 'domain/model/candidate.dart';
 import 'ui/screens/candidate_screen.dart';
+import 'ui/screens/form_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/registration_screen.dart';
 import 'ui/screens/tech_assesment_screen.dart';
@@ -21,10 +22,11 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/aa': (context) => const SplashScreen(),
+        '/splash': (context) => const SplashScreen(),
+        '/': (context) => const MembershipForm(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
-        '/':
+        '/candidate':
             (context) => CandidateScreeningPage(
               candidate: Candidate(
                 aadhar: '293008805934',
