@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:screenify/ui/screens/splash_screen.dart';
 
 import 'domain/model/candidate.dart';
-import 'ui/screens/dashboard_screen.dart';
+import 'ui/screens/candidate_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/registration_screen.dart';
 import 'ui/screens/tech_assesment_screen.dart';
@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
         '/':
-            (context) => DashboardScreen(
+            (context) => CandidateScreeningPage(
               candidate: Candidate(
                 aadhar: '293008805934',
                 name: 'Jai',

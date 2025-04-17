@@ -8,6 +8,21 @@ import 'app.dart';
 import 'services/window_service.dart';
 
 void main() async {
+  // Avoid listening to signals on Windows
+  if (!Platform.isWindows) {
+    ProcessSignal.sigterm.watch().listen((_) {
+      print('Received SIGTERM. Shutting down gracefully...');
+      // Perform cleanup or shutdown logic here
+    });
+
+    // Register a callback for when the app is shutting down
+    ProcessSignal.sigterm.watch().listen((_) {
+      // Show taskbar before application terminates
+      WindowService().showTaskbar();
+      exit(0);
+    });
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
 
@@ -16,13 +31,6 @@ void main() async {
 
   // Set the database factory
   databaseFactory = databaseFactoryFfi;
-
-  // Register a callback for when the app is shutting down
-  ProcessSignal.sigterm.watch().listen((_) {
-    // Show taskbar before application terminates
-    WindowService().showTaskbar();
-    exit(0);
-  });
 
   // Set window to full screen
   windowManager.waitUntilReadyToShow().then((_) async {

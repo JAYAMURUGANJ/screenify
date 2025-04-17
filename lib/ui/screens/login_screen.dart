@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/local/db_helper.dart';
-import 'dashboard_screen.dart';
+import 'candidate_screen.dart';
 import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -68,7 +68,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => DashboardScreen(candidate: candidate),
+              builder:
+                  (context) => CandidateScreeningPage(candidate: candidate),
             ),
           );
         } else {
