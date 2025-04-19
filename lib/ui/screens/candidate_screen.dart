@@ -45,7 +45,7 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
       child: Scaffold(
         backgroundColor: Colors.grey[100],
         appBar: AppBar(
-          elevation: 0,
+          elevation: 5,
           backgroundColor: Colors.white,
           automaticallyImplyLeading: false,
           title: Row(
@@ -56,16 +56,33 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
                   color: Colors.blue[700]!,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.app_shortcut, color: Colors.white),
+                child: const Icon(
+                  Icons.app_shortcut,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Screenify',
-                style: TextStyle(
-                  color: Color(0xFF2C3E50),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Screenify',
+                    style: TextStyle(
+                      color: Color(0xFF2C3E50),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
+                  ),
+                  Text(
+                    'Candidate Assessment Portal',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -181,66 +198,128 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
         ),
         body: Stack(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  const Text(
-                    'Candidate Screening',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2C3E50),
-                    ),
+            Column(
+              children: [
+                // Organization Header with Logo
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 20,
+                    horizontal: 24,
                   ),
-                  const SizedBox(height: 16),
-
-                  // Main content with side-by-side layout
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        // Use Row for wider screens, Column for narrower screens
-                        return Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Left column - Profile
-                            Expanded(
-                              flex: 1,
-                              child: SingleChildScrollView(
-                                child: _buildProfileSection(),
+                  color: Colors.white,
+                  child: Center(
+                    child: Row(
+                      mainAxisSize:
+                          MainAxisSize
+                              .min, // Important for centering the row content
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Logo
+                        SizedBox(
+                          width: 160,
+                          height: 160,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Organization details
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: const [
+                            Text(
+                              'The Income Tax Department Co-operative Society Limited',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
                               ),
+                              textAlign: TextAlign.center,
                             ),
-                            const SizedBox(width: 16),
-                            // Right column - Assessments
-                            Expanded(
-                              flex: 1,
-                              child: SingleChildScrollView(
-                                child: _buildAssessmentsSection(),
+                            SizedBox(height: 8),
+                            Text(
+                              '(REGD.No. MSCS/CR-11/90)',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
                               ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              '121, MAHATHMA GANDHI SALAI, CHENNAI - 600 034.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
                           ],
-                        );
-                      },
+                        ),
+                      ],
                     ),
                   ),
+                ),
 
-                  // Footer
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Text(
-                        '© ${DateTime.now().year} Screenify. All rights reserved.',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                      ),
+                // Main Content (moved inside the Column)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Main content with side-by-side layout
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              // Use Row for wider screens, Column for narrower screens
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Left column - Profile
+                                  Expanded(
+                                    flex: 1,
+                                    child: SingleChildScrollView(
+                                      child: _buildProfileSection(),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // Right column - Assessments
+                                  Expanded(
+                                    flex: 1,
+                                    child: SingleChildScrollView(
+                                      child: _buildAssessmentsSection(),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+
+                        // Footer
+                        Center(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Text(
+                              '© ${DateTime.now().year} Screenify. All rights reserved.',
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
 
-            // Notifications panel
+            // Notifications panel (unchanged)
             if (_isNotificationsExpanded)
               Positioned(
                 top: 0,
@@ -486,13 +565,25 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
                   ),
                 ),
                 const Chip(
-                  label: Text('1 Pending'),
+                  label: Text('2 Pending'),
                   backgroundColor: Color(0xFFFFECB3),
                   labelStyle: TextStyle(color: Color(0xFFFF8F00)),
                 ),
               ],
             ),
             const SizedBox(height: 16),
+
+            _buildAssessmentItem(
+              'Multiple Choice Questions (MCQ)',
+              'Not scheduled',
+              'Not scheduled',
+              Icons.quiz,
+              Colors.purple[700]!,
+              isNotScheduled: true,
+              description:
+                  'Knowledge assessment through multiple choice questions on programming concepts and logic',
+            ),
+            const Divider(),
             _buildAssessmentItem(
               'Technical Skills Assessment',
               'April 17, 2025',
@@ -502,17 +593,7 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
               isPending: true,
               description:
                   'Practical assessment on MS Office applications including Word, Excel and PowerPoint',
-            ),
-            const Divider(),
-            _buildAssessmentItem(
-              'Multiple Choice Questions (MCQ)',
-              'April 15, 2025',
-              '02:00 PM - 03:00 PM',
-              Icons.quiz,
-              Colors.blue[700]!,
-              isCompleted: true,
-              description:
-                  'Knowledge assessment through multiple choice questions on programming concepts and logic',
+              navigationRoute: '/technicalAssesment',
             ),
             const Divider(),
             _buildAssessmentItem(
@@ -520,10 +601,12 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
               'Not scheduled',
               'Not scheduled',
               Icons.assignment,
-              Colors.purple[700]!,
-              isNotScheduled: true,
+
+              Colors.green[700]!,
+              isPending: true,
               description:
                   'Assessment of form filling skills including accuracy and speed',
+              navigationRoute: '/memberShipForm',
             ),
           ],
         ),
@@ -541,6 +624,7 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
     bool isCompleted = false,
     bool isNotScheduled = false,
     required String description,
+    String? navigationRoute, // New parameter for the route
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
@@ -602,8 +686,10 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
           if (isPending)
             ElevatedButton(
               onPressed: () {
-                // Start assessment
-                Navigator.pushNamed(context, '/technicalAssesment');
+                // Start assessment with the specific route
+                if (navigationRoute != null) {
+                  Navigator.pushNamed(context, navigationRoute);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: color,
@@ -618,6 +704,9 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
             OutlinedButton(
               onPressed: () {
                 // View results
+                if (navigationRoute != null) {
+                  Navigator.pushNamed(context, navigationRoute);
+                }
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.green[700],
@@ -632,6 +721,9 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
             OutlinedButton(
               onPressed: () {
                 // Schedule assessment
+                if (navigationRoute != null) {
+                  Navigator.pushNamed(context, navigationRoute);
+                }
               },
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.blue[700],
@@ -643,86 +735,6 @@ class _CandidateScreeningPageState extends State<CandidateScreeningPage> {
               child: const Text('Schedule'),
             ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildResourcesSection() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Resources & Materials',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2C3E50),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.blue[50],
-                child: Icon(Icons.description, color: Colors.blue[700]),
-              ),
-              title: const Text('Assessment Preparation Guide'),
-              subtitle: const Text('Tips and tricks to ace your assessments'),
-              trailing: Icon(Icons.download, color: Colors.blue[700]),
-              onTap: () {
-                // Download or view guide
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.green[50],
-                child: Icon(Icons.video_library, color: Colors.green[700]),
-              ),
-              title: const Text('Technical Skills Tutorial Videos'),
-              subtitle: const Text('Video guides for the technical assessment'),
-              trailing: Icon(
-                Icons.play_circle_filled,
-                color: Colors.green[700],
-              ),
-              onTap: () {
-                // View videos
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.orange[50],
-                child: Icon(Icons.quiz, color: Colors.orange[700]),
-              ),
-              title: const Text('Practice Questions'),
-              subtitle: const Text(
-                'Sample questions to practice before the assessment',
-              ),
-              trailing: Icon(Icons.arrow_forward, color: Colors.orange[700]),
-              onTap: () {
-                // Go to practice questions
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.purple[50],
-                child: Icon(Icons.book, color: Colors.purple[700]),
-              ),
-              title: const Text('Company Information'),
-              subtitle: const Text('Learn more about our company and culture'),
-              trailing: Icon(Icons.info_outline, color: Colors.purple[700]),
-              onTap: () {
-                // View company info
-              },
-            ),
-          ],
-        ),
       ),
     );
   }

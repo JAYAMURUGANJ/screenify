@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:screenify/ui/screens/splash_screen.dart';
 
-import 'domain/model/candidate.dart';
-import 'ui/screens/candidate_screen.dart';
 import 'ui/screens/form_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/registration_screen.dart';
@@ -22,20 +20,11 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: '/',
       routes: {
-        '/splash': (context) => const SplashScreen(),
-        '/': (context) => const MembershipForm(),
+        '/': (context) => const SplashScreen(),
+        '/memberShipForm': (context) => const MembershipForm(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegistrationScreen(),
-        '/candidate':
-            (context) => CandidateScreeningPage(
-              candidate: Candidate(
-                aadhar: '293008805934',
-                name: 'Jai',
-                email: 'jai@gmail.com',
-                phone: '1234567890',
-                dob: '1990-01-01',
-              ),
-            ),
+        // '/candidateScreen': (context) => const CandidateScreeningPage(),
         '/technicalAssesment': (context) => const TechnicalAssesment(),
       },
     );

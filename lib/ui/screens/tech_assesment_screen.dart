@@ -271,7 +271,7 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
             Tooltip(
               message:
                   hasEmbeddedApp || isLoading
-                      ? 'Close open applications first'
+                      ? 'Close opened applications first'
                       : 'Logout', // Changed from 'Exit Application' to 'Logout'
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -289,7 +289,10 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                           ? null // Disable when windows are open or loading
                           : () {
                             // Navigate to login screen instead of just exiting
-                            Navigator.pushReplacementNamed(context, '/login');
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/candidateScreen',
+                            );
                           },
                   color:
                       hasEmbeddedApp || isLoading
