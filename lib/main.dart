@@ -11,7 +11,7 @@ void main() async {
   // Avoid listening to signals on Windows
   if (!Platform.isWindows) {
     ProcessSignal.sigterm.watch().listen((_) {
-      print('Received SIGTERM. Shutting down gracefully...');
+      debugPrint('Received SIGTERM. Shutting down gracefully...');
       // Perform cleanup or shutdown logic here
     });
 
