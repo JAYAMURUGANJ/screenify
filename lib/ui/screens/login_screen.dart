@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:screenify/ui/screens/config_screen.dart';
 
 import '../../domain/local/db_helper.dart';
 import 'candidate_screen.dart';
@@ -343,6 +344,31 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(
                                   color: Colors.grey[500],
                                   fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Align(
+                              alignment: Alignment.center,
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SettingsScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: Icon(
+                                  Icons.settings,
+                                  color: Colors.blue[700],
+                                ),
+                                label: Text(
+                                  "Settings",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.blue[700],
+                                  ),
                                 ),
                               ),
                             ),

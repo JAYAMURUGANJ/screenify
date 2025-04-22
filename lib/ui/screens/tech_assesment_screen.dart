@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:win32/win32.dart';
 
 import '../../services/keyboard_service.dart';
@@ -20,8 +21,14 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
   final WindowService _windowService = WindowService();
   final KeyboardService _keyboardService = KeyboardService();
   final String _loadingMessage = '';
-  String msOfficePath = "C:\\Program Files (x86)\\Microsoft Office\\Office12";
+  String msOfficePath = ""; // Default path
   LoadingState _loadingState = LoadingState.idle;
+
+  // Reference to the sidebar
+  final GlobalKey<AppSidebarState> _sidebarKey = GlobalKey<AppSidebarState>();
+
+  // Initialize with default paths, not using late keyword
+  Map<String, String> appPaths = {};
 
   bool get isLoading => _loadingState != LoadingState.idle;
 
@@ -29,6 +36,41 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
     setState(() {
       _loadingState = state;
     });
+  }
+
+  Future<void> _loadOfficePathFromPrefs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedPath = prefs.getString('ms_office_path');
+
+      if (savedPath != null && savedPath.isNotEmpty) {
+        setState(() {
+          msOfficePath = savedPath;
+          // Update paths with new Office path
+          appPaths = {
+            'Word': "$msOfficePath\\WINWORD.EXE",
+            'Excel': "$msOfficePath\\EXCEL.EXE",
+            'PowerPoint': "$msOfficePath\\POWERPNT.EXE",
+          };
+        });
+        debugPrint('Loaded Office path from preferences: $msOfficePath');
+      } else {
+        // No saved path found, use default and save it
+        await _saveOfficePathToPrefs(msOfficePath);
+      }
+    } catch (e) {
+      debugPrint('Error loading Office path from preferences: $e');
+    }
+  }
+
+  Future<void> _saveOfficePathToPrefs(String path) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('ms_office_path', path);
+      debugPrint('Saved Office path to preferences: $path');
+    } catch (e) {
+      debugPrint('Error saving Office path to preferences: $e');
+    }
   }
 
   void _handleLifecycleEvent(String? msg) {
@@ -42,23 +84,20 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
     }
   }
 
-  // Reference to the sidebar
-  final GlobalKey<AppSidebarState> _sidebarKey = GlobalKey<AppSidebarState>();
-
-  // Example: Load paths from a configuration file
-  late final Map<String, String> appPaths;
-
   @override
   void initState() {
     super.initState();
     _keyboardService.registerKeyboardHandler();
 
-    // Initialize appPaths with instance member
+    // Initialize appPaths with default values first
     appPaths = {
       'Word': "$msOfficePath\\WINWORD.EXE",
       'Excel': "$msOfficePath\\EXCEL.EXE",
       'PowerPoint': "$msOfficePath\\POWERPNT.EXE",
     };
+
+    // Load the saved Office path (will update appPaths in setState if path is found)
+    _loadOfficePathFromPrefs();
 
     // Set up app lifecycle monitoring
     SystemChannels.lifecycle.setMessageHandler((msg) async {
@@ -83,18 +122,6 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
 
     super.dispose();
   }
-
-  // // Method to handle exit application with loading state
-  // void _exitApplication() {
-  //   _setLoadingState(LoadingState.closing);
-  //   _loadingMessage = "Application closing, please wait...";
-
-  //   // Show loading indicator while exiting
-  //   Future.delayed(const Duration(milliseconds: 800), () {
-  //     _windowService.exitApplication();
-  //     // App will terminate, so we don't need to set loading back to idle
-  //   });
-  // }
 
   // Method to close the embedded application and clear sidebar selection
   void _closeEmbeddedApp() {
@@ -206,6 +233,59 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
     );
   }
 
+  // Add method to show settings for Office path
+  void _showOfficePathSettingsDialog() {
+    final TextEditingController controller = TextEditingController(
+      text: msOfficePath,
+    );
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Microsoft Office Path'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    labelText: 'Office Installation Path',
+                    hintText:
+                        'C:\\Program Files (x86)\\Microsoft Office\\Office12',
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final newPath = controller.text.trim();
+                  if (newPath.isNotEmpty) {
+                    await _saveOfficePathToPrefs(newPath);
+                    setState(() {
+                      msOfficePath = newPath;
+                      // Update appPaths with new msOfficePath
+                      appPaths = {
+                        'Word': "$msOfficePath\\WINWORD.EXE",
+                        'Excel': "$msOfficePath\\EXCEL.EXE",
+                        'PowerPoint': "$msOfficePath\\POWERPNT.EXE",
+                      };
+                    });
+                  }
+                  Navigator.pop(context);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool hasEmbeddedApp = _windowService.embeddedWindowHwnd != null;
@@ -217,8 +297,7 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.white,
-          automaticallyImplyLeading:
-              true, // Changed to true to show back button
+          automaticallyImplyLeading: true,
           title: Row(
             children: [
               Container(
@@ -253,12 +332,18 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
             ],
           ),
           actions: [
+            // Settings button for Office path
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: _showOfficePathSettingsDialog,
+              tooltip: 'Office Path Settings',
+            ),
             if (hasEmbeddedApp && !isLoading)
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.close),
-                  onPressed: _closeEmbeddedApp, // Use the new method
+                  onPressed: _closeEmbeddedApp,
                   label: Text('Close ${_windowService.currentAppName}'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red[700],
@@ -266,13 +351,12 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                   ),
                 ),
               ),
-            // Exit button - only enabled if no windows are open and not loading
-            // Exit button - modify to handle logout instead of just exit
+            // Exit button
             Tooltip(
               message:
                   hasEmbeddedApp || isLoading
                       ? 'Close opened applications first'
-                      : 'Logout', // Changed from 'Exit Application' to 'Logout'
+                      : 'Logout',
               child: Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
                 decoration: BoxDecoration(
@@ -286,9 +370,8 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                   icon: const Icon(Icons.exit_to_app),
                   onPressed:
                       hasEmbeddedApp || isLoading
-                          ? null // Disable when windows are open or loading
+                          ? null
                           : () {
-                            // Navigate to login screen instead of just exiting
                             Navigator.pushReplacementNamed(
                               context,
                               '/candidateScreen',
@@ -335,10 +418,8 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                     absorbing: isLoading,
                     child: Opacity(
                       opacity: isLoading ? 0.5 : 1.0,
-                      child: // Update the AppSidebar in the HomeScreen's build method
-                          AppSidebar(
-                        key:
-                            _sidebarKey, // Keep the key to access sidebar state
+                      child: AppSidebar(
+                        key: _sidebarKey,
                         onEmbedWord: () {
                           try {
                             _windowService.embedApplication(
@@ -373,19 +454,17 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                           }
                         },
                         onSelectionChanged: (selectedApp) {},
-                        isLoading: isLoading, // Pass the loading state
+                        isLoading: isLoading,
                       ),
                     ),
                   ),
 
-                  // Pass loading state to EmbeddedAppContainer
-                  // In the build method, update the EmbeddedAppContainer instantiation:
                   EmbeddedAppContainer(
                     embeddedAreaKey: _windowService.embeddedAreaKey,
                     hasEmbeddedApp: hasEmbeddedApp,
                     currentAppName: _windowService.currentAppName,
                     isLoading: isLoading,
-                    loadingMessage: _loadingMessage, // Add the loading message
+                    loadingMessage: _loadingMessage,
                     onMouseEnter: () {
                       if (_windowService.embeddedWindowHwnd != null &&
                           !isLoading) {
@@ -397,13 +476,10 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                     onRefreshApp:
                         hasEmbeddedApp && !isLoading
                             ? () {
-                              // Optional refresh functionality
                               final currentApp = _windowService.currentAppName;
 
                               if (appPaths.containsKey(currentApp)) {
-                                // Close the app and clear selection
                                 _closeEmbeddedApp();
-                                // Brief delay to allow proper cleanup
                                 Future.delayed(
                                   const Duration(milliseconds: 300),
                                   () {
@@ -418,7 +494,6 @@ class _TechnicalAssesmentState extends State<TechnicalAssesment> {
                                         'Failed to embed application: $e',
                                       );
                                     }
-                                    // New app selection will set the highlight automatically
                                   },
                                 );
                               }
