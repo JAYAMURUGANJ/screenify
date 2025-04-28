@@ -33,7 +33,7 @@ class DatabaseHelper {
       final dbPath = join(dbDirectory.path, 'candidate_database.db');
 
       // Debug info
-      print('Database path: $dbPath');
+      debugPrint('Database path: $dbPath');
 
       // Ensure the directory exists
       await Directory(dirname(dbPath)).create(recursive: true);

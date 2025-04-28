@@ -90,7 +90,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         // Register the candidate and get the generated ID
         final candidateId = await _dbHelper.registerCandidate(candidate);
 
-        // Show success message with the candidate ID
+        // Inside your showDialog
         showDialog(
           context: context,
           builder:
@@ -122,24 +122,41 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         children: [
                           const Icon(Icons.badge, color: Colors.blue),
                           const SizedBox(width: 10),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Your Candidate ID',
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.w500,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Your Candidate ID',
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                candidateId,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 18,
+                                Text(
+                                  candidateId,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.copy, color: Colors.blue),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(text: candidateId),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Candidate ID copied to clipboard',
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         ],
                       ),
