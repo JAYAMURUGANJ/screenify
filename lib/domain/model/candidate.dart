@@ -39,4 +39,9 @@ class Candidate {
       dob: map['dob'],
     );
   }
+
+  @override
+  String toString() {
+    return 'Candidate{id: $id, name: $name, email: $email, phone: $phone, dob: $dob}';
+  }
 }

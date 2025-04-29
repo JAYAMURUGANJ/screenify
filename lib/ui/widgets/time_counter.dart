@@ -6,11 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 class CountdownTimer extends StatefulWidget {
   final int durationInMinutes;
   final Function()? onTimerComplete;
+  final bool autoStart;
 
   const CountdownTimer({
     super.key,
     this.durationInMinutes = 60,
     this.onTimerComplete,
+    this.autoStart = false,
   });
 
   @override
@@ -26,6 +28,14 @@ class CountdownTimerState extends State<CountdownTimer> {
   void initState() {
     super.initState();
     _secondsRemaining = widget.durationInMinutes * 60;
+
+    // Auto-start timer if specified
+    if (widget.autoStart) {
+      // Use a post-frame callback to ensure the widget is fully built
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        startTimer();
+      });
+    }
   }
 
   @override
@@ -127,7 +137,6 @@ class CountdownTimerState extends State<CountdownTimer> {
             ),
           ),
           //const SizedBox(width: 8),
-
           // GestureDetector(
           //   onTap: _isRunning ? pauseTimer : startTimer,
           //   child: Icon(

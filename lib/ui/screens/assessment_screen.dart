@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,10 +16,12 @@ class AssessmentsScreen extends StatefulWidget {
 class _AssessmentsScreenState extends State<AssessmentsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final bool _isSearching = false;
   final TextEditingController _searchController = TextEditingController();
 
+  // User profile related variables
+
   final List<Map<String, dynamic>> _assessments = [
+    // Your assessment data remains unchanged
     {
       'title': 'Multiple Choice Questions (MCQ)',
       'description':
@@ -80,28 +84,111 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     super.dispose();
   }
 
-  void _filterAssessments(String query) {
-    if (query.isEmpty) {
-      setState(() {
-        _filteredAssessments = List.from(_assessments);
-      });
-      return;
-    }
-
-    setState(() {
-      _filteredAssessments =
-          _assessments
-              .where(
-                (assessment) =>
-                    assessment['title'].toLowerCase().contains(
-                      query.toLowerCase(),
-                    ) ||
-                    assessment['description'].toLowerCase().contains(
-                      query.toLowerCase(),
+  void _showProfileMenu() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder:
+          (context) => Container(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 40,
+                  backgroundColor: Colors.indigo[100],
+                  child: Text(
+                    "J",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.indigo,
                     ),
-              )
-              .toList();
-    });
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  "Jayamurugan",
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  "Jamu@gmail.com",
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'CAND-2025-GEG9IA',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                ),
+
+                const SizedBox(height: 20),
+                ListTile(
+                  leading: const Icon(Icons.person_outline),
+                  title: const Text('My Profile'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/profile');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.settings_outlined),
+                  title: const Text('Settings'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/settings');
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  // Get initials from name for avatar
+  String _getInitials(String name) {
+    if (name.isEmpty) return '?';
+
+    final nameParts = name.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
+    } else {
+      return name[0].toUpperCase();
+    }
+  }
+
+  // Determine avatar background color based on name
+  Color _getAvatarColor(String name) {
+    if (name.isEmpty) return Colors.grey;
+
+    // Generate a consistent color based on the name
+    final int hashCode = name.hashCode;
+    final Random random = Random(hashCode);
+
+    final List<MaterialColor> colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.purple,
+      Colors.amber,
+      Colors.teal,
+      Colors.pink,
+    ];
+
+    return colors[random.nextInt(colors.length)][300]!;
   }
 
   @override
@@ -250,9 +337,10 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
         ],
       ),
       actions: [
-        // Add the timer widget
         CountdownTimer(
-          durationInMinutes: 60,
+          key: const ValueKey("assessmentTimer"),
+          durationInMinutes: 1,
+          autoStart: true,
           onTimerComplete: () {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -264,30 +352,27 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
           },
         ),
         const SizedBox(width: 12),
-        IconButton(
-          icon: const Icon(Icons.filter_list),
-          onPressed: () {
-            // Show filter dialog
-            _showFilterDialog();
-          },
-          color: Colors.grey[700],
-          tooltip: 'Filter',
-        ),
-        IconButton(
-          icon: const Icon(Icons.notifications_outlined),
-          onPressed: () {
-            // Show notifications
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('No new notifications'),
-                behavior: SnackBarBehavior.floating,
+
+        // User profile avatar
+        GestureDetector(
+          onTap: _showProfileMenu,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: CircleAvatar(
+              radius: 16,
+              backgroundColor: _getAvatarColor("Jayamurugan"),
+
+              child: Text(
+                _getInitials("J"),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
-            );
-          },
-          color: Colors.grey[700],
-          tooltip: 'Notifications',
+            ),
+          ),
         ),
-        const SizedBox(width: 8),
       ],
     );
   }
