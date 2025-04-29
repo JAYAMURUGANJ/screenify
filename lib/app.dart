@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:screenify/ui/screens/excel_screen.dart';
 
-import 'ui/screens/Typing_screen.dart';
 import 'ui/screens/assessment_screen.dart';
-import 'ui/screens/email_screen.dart';
-import 'ui/screens/form_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/registration_screen.dart';
 import 'ui/screens/splash_screen.dart';
@@ -99,13 +95,14 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
-        '/FormFillingAssessment': (context) => const FormFillingAssessment(),
         '/Assessments': (context) => const AssessmentsScreen(),
         '/Login': (context) => const LoginScreen(),
         '/Register': (context) => const RegistrationScreen(),
-        '/TypingAssessment': (context) => const TypingAssessment(),
-        '/EmailWritingAssessment': (context) => const EmailAssessment(),
-        '/ExcelAssessment': (context) => const ExcelAssessment(),
+        // '/TypingAssessment': (context) => const TypingAssessment(),
+        // '/EmailWritingAssessment': (context) => const EmailAssessment(),
+        // '/ExcelAssessment': (context) => const ExcelAssessment(),
+        // '/MCQAssessment': (context) => const MCQAssessmentScreen(questions: []),
+        //'/FormFillingAssessment': (context) => const FormFillingAssessment(),
       },
     );
   }

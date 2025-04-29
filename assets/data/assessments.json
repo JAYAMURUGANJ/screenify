@@ -1,0 +1,76 @@
+{
+    "assessments": [
+        {
+            "type": "MCQ",
+            "title": "Multiple Choice Questions (MCQ)",
+            "description": "Knowledge assessment through multiple choice questions on programming concepts and logic",
+            "icon": "quiz",
+            "color": "purple",
+            "route": "/MCQAssessment",
+            "questions": [
+                {
+                    "question": "What is the capital of France?",
+                    "options": [
+                        "London",
+                        "Berlin",
+                        "Paris",
+                        "Madrid"
+                    ],
+                    "correctAnswerIndex": 2
+                },
+                {
+                    "question": "Which planet is known as the Red Planet?",
+                    "options": [
+                        "Earth",
+                        "Mars",
+                        "Jupiter",
+                        "Venus"
+                    ],
+                    "correctAnswerIndex": 1
+                }
+              
+            ],
+            "status": "not_opened"
+        },
+        {
+            "type": "Email",
+            "title": "Email Writing",
+            "icon": "email",
+            "color": "orange",
+            "route": "/EmailWritingAssessment",
+            "description": "Assessment of professional email writing skills and etiquette",
+            "instruction": "You received a defective product (Model X200 Printer) from TechSupplies Inc. Write an email to their customer service explaining the issue and requesting a replacement or refund. Your order number is #45678.",
+            "expectedTo": "support@techsupplies.com",
+            "expectedCc": "",
+            "expectedSubject": "Defective Product - Order #45678",
+            "expectedKeywords": [
+                "defective",
+                "product",
+                "printer",
+                "X200",
+                "replacement",
+                "refund",
+                "order",
+                "issue"
+            ],
+            "hints": [
+                "Include your order number",
+                "Describe the product issue clearly",
+                "Specify what resolution you want",
+                "Be polite but direct"
+            ],
+            "status": "not_opened"
+        },
+        {
+            "type": "Typing",
+            "title": "Typing Test",
+            "description": "Assessment of typing speed and accuracy",
+            "icon": "keyboard",
+            "color": "green",
+            "route": "/TypingAssessment",
+            "instructions": "Type the following paragraph as quickly and accurately as possible.",
+            "paragraph": "The quick brown fox jumps over the lazy dog. Touch typing is the ability to use muscle memory to find keys fast, without using the sense of sight, and with all the available fingers, just like piano players do. It significantly improves typing speed and eliminates errors. Touch typing simply makes you more productive and it is a skill worth learning.",
+            "status": "not_opened"
+        }
+    ]
+}

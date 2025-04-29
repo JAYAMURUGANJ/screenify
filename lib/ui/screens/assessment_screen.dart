@@ -1,9 +1,14 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:screenify/ui/screens/mcq_screen.dart';
+import 'package:screenify/ui/widgets/department_details.dart';
 
+import '../../domain/api/assessment_service.dart';
+import '../../domain/local/assessment_manager.dart';
+import '../../domain/model/assessment_data.dart';
+import '../widgets/assessment_status_updater.dart';
+import '../widgets/profile_widget.dart';
 import '../widgets/time_counter.dart';
 
 class AssessmentsScreen extends StatefulWidget {
@@ -16,179 +21,103 @@ class AssessmentsScreen extends StatefulWidget {
 class _AssessmentsScreenState extends State<AssessmentsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TextEditingController _searchController = TextEditingController();
+  final AssessmentService _assessmentService = AssessmentService();
+  final AssessmentPreferencesManager _prefsManager =
+      AssessmentPreferencesManager();
 
-  // User profile related variables
-
-  final List<Map<String, dynamic>> _assessments = [
-    // Your assessment data remains unchanged
-    {
-      'title': 'Multiple Choice Questions (MCQ)',
-      'description':
-          'Knowledge assessment through multiple choice questions on programming concepts and logic',
-      'icon': Icons.quiz,
-      'color': Colors.purple,
-      'status': 'pending',
-      'route': '/mcqAssessment',
-    },
-    {
-      'title': 'Form Filling Skills',
-      'description':
-          'Assessment of form filling skills including accuracy and speed',
-      'icon': Icons.assignment,
-      'color': Colors.blue,
-      'status': 'not_opened',
-      'route': '/FormFillingAssessment',
-    },
-    {
-      'title': 'Typing Test',
-      'description': 'Assessment of typing speed and accuracy',
-      'icon': Icons.keyboard,
-      'color': Colors.green,
-      'status': 'completed',
-      'route': '/TypingAssessment',
-    },
-    {
-      'title': 'Email Writing',
-      'description':
-          'Assessment of professional email writing skills and etiquette',
-      'icon': Icons.email,
-      'color': Colors.orange,
-      'status': 'pending',
-      'route': '/EmailWritingAssessment',
-    },
-    {
-      'title': 'Excel Skills Assessment',
-      'description':
-          'Practical assessment of Microsoft Excel skills including formulas and data analysis',
-      'icon': Icons.table_chart,
-      'color': Colors.teal,
-      'status': 'not_opened',
-      'route': '/ExcelAssessment',
-    },
-  ];
-
-  List<Map<String, dynamic>> _filteredAssessments = [];
+  bool _isLoading = true;
+  List<Assessment> _assessments = [];
+  List<Assessment> _filteredAssessments = [];
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    _filteredAssessments = List.from(_assessments);
+    _loadAllAssessments();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
-  void _showProfileMenu() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.indigo[100],
-                  child: Text(
-                    "J",
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Jayamurugan",
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  "Jamu@gmail.com",
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'CAND-2025-GEG9IA',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                ),
-
-                const SizedBox(height: 20),
-                ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('My Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: const Text('Settings'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/settings');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-    );
-  }
-
-  // Get initials from name for avatar
-  String _getInitials(String name) {
-    if (name.isEmpty) return '?';
-
-    final nameParts = name.trim().split(' ');
-    if (nameParts.length >= 2) {
-      return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
-    } else {
-      return name[0].toUpperCase();
+  // Function to map icon string from JSON to IconData
+  IconData _getIconFromString(String iconName) {
+    switch (iconName) {
+      case 'quiz':
+        return Icons.quiz;
+      case 'email':
+        return Icons.email;
+      case 'keyboard':
+        return Icons.keyboard;
+      case 'assignment':
+        return Icons.assignment;
+      case 'table_chart':
+        return Icons.table_chart;
+      default:
+        return Icons.assessment;
     }
   }
 
-  // Determine avatar background color based on name
-  Color _getAvatarColor(String name) {
-    if (name.isEmpty) return Colors.grey;
+  // Function to map color string from JSON to Color
+  Color _getColorFromString(String colorName) {
+    switch (colorName) {
+      case 'purple':
+        return Colors.purple;
+      case 'orange':
+        return Colors.orange;
+      case 'green':
+        return Colors.green;
+      case 'blue':
+        return Colors.blue;
+      case 'teal':
+        return Colors.teal;
+      default:
+        return Colors.indigo;
+    }
+  }
 
-    // Generate a consistent color based on the name
-    final int hashCode = name.hashCode;
-    final Random random = Random(hashCode);
+  // Function to load all assessments from the service and update their statuses
+  Future<void> _loadAllAssessments() async {
+    setState(() {
+      _isLoading = true;
+    });
 
-    final List<MaterialColor> colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.purple,
-      Colors.amber,
-      Colors.teal,
-      Colors.pink,
-    ];
+    try {
+      await _assessmentService.loadAssessmentData();
 
-    return colors[random.nextInt(colors.length)][300]!;
+      // Get all the different types of assessments and combine them
+      final List<String> assessmentTypes =
+          _assessmentService.getAvailableAssessmentTypes();
+      List<Assessment> allAssessments = [];
+
+      for (String type in assessmentTypes) {
+        allAssessments.addAll(_assessmentService.getAssessmentsByType(type));
+      }
+
+      // Get stored assessment statuses
+      final Map<String, String> statusMap =
+          await _prefsManager.getAllAssessmentStatuses();
+
+      // Update assessment statuses from preferences
+      for (var assessment in allAssessments) {
+        if (statusMap.containsKey(assessment.type)) {
+          assessment.status = statusMap[assessment.type];
+        }
+      }
+
+      setState(() {
+        _assessments = allAssessments;
+        _filteredAssessments = List.from(_assessments);
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading assessments: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -198,116 +127,128 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
       child: Scaffold(
         backgroundColor: Colors.grey[50],
         appBar: _buildAppBar(),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Organization Header with Logo
-            _buildOrganizationHeader(),
-
-            // Tab Bar
-            Container(
-              color: Colors.white,
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Colors.indigo[700],
-                unselectedLabelColor: Colors.grey[600],
-                indicatorColor: Colors.indigo[700],
-                indicatorWeight: 3,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                tabs: const [
-                  Tab(text: 'All'),
-                  Tab(text: 'Pending'),
-                  Tab(text: 'Completed'),
-                  Tab(text: 'Not Opened'),
-                ],
-                onTap: (index) {
-                  setState(() {
-                    if (index == 0) {
-                      _filteredAssessments = List.from(_assessments);
-                    } else if (index == 1) {
-                      _filteredAssessments =
-                          _assessments
-                              .where((a) => a['status'] == 'pending')
-                              .toList();
-                    } else if (index == 2) {
-                      _filteredAssessments =
-                          _assessments
-                              .where((a) => a['status'] == 'completed')
-                              .toList();
-                    } else if (index == 3) {
-                      _filteredAssessments =
-                          _assessments
-                              .where((a) => a['status'] == 'not_opened')
-                              .toList();
-                    }
-                  });
-                },
-              ),
-            ),
-
-            // Status overview
-            _buildStatusOverview(),
-
-            // Assessments list
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
+        body:
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16, bottom: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Available Assessments',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    _filteredAssessments.isEmpty
-                        ? _buildNoAssessmentsFound()
-                        : Expanded(
-                          child: GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 5,
-                                  crossAxisSpacing: 20,
-                                  mainAxisSpacing: 16,
-                                  childAspectRatio: 0.85,
-                                ),
-                            itemCount: _filteredAssessments.length,
-                            itemBuilder: (context, index) {
-                              final assessment = _filteredAssessments[index];
-                              return _buildAssessmentCard(assessment);
-                            },
-                          ),
-                        ),
+                    DepartmentDetails(),
+                    // Tab Bar
+                    _buildTabBar(),
+                    // Status overview
+                    AssessmentStatusDashboard(),
+                    // Assessments list
+                    _buildAssessmentList(),
                   ],
                 ),
+      ),
+    );
+  }
+
+  Expanded _buildAssessmentList() {
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Available Assessments',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  // Add refresh button
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _loadAllAssessments,
+                    tooltip: 'Refresh assessment statuses',
+                  ),
+                ],
               ),
             ),
+            _filteredAssessments.isEmpty
+                ? _buildNoAssessmentsFound()
+                : Expanded(
+                  child: GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          crossAxisSpacing: 20,
+                          mainAxisSpacing: 16,
+                          childAspectRatio: 0.85,
+                        ),
+                    itemCount: _filteredAssessments.length,
+                    itemBuilder: (context, index) {
+                      final assessment = _filteredAssessments[index];
+                      return _buildAssessmentCard(assessment);
+                    },
+                  ),
+                ),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // Action to show help or tutorial
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Help and tutorials coming soon!'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          backgroundColor: Colors.indigo[700],
-          child: const Icon(Icons.help_outline),
-        ),
+      ),
+    );
+  }
+
+  Container _buildTabBar() {
+    return Container(
+      color: Colors.white,
+      child: TabBar(
+        controller: _tabController,
+        labelColor: Colors.indigo[700],
+        unselectedLabelColor: Colors.grey[600],
+        indicatorColor: Colors.indigo[700],
+        indicatorWeight: 3,
+        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        tabs: const [
+          Tab(text: 'All'),
+          Tab(text: 'Pending'),
+          Tab(text: 'Completed'),
+          Tab(text: 'Not Opened'),
+        ],
+        onTap: (index) {
+          setState(() {
+            if (index == 0) {
+              _filteredAssessments = List.from(_assessments);
+            } else if (index == 1) {
+              _filteredAssessments =
+                  _assessments
+                      .where(
+                        (a) =>
+                            a.status ==
+                            AssessmentPreferencesManager.STATUS_PENDING,
+                      )
+                      .toList();
+            } else if (index == 2) {
+              _filteredAssessments =
+                  _assessments
+                      .where(
+                        (a) =>
+                            a.status ==
+                            AssessmentPreferencesManager.STATUS_COMPLETED,
+                      )
+                      .toList();
+            } else if (index == 3) {
+              _filteredAssessments =
+                  _assessments
+                      .where(
+                        (a) =>
+                            a.status ==
+                            AssessmentPreferencesManager.STATUS_NOT_OPENED,
+                      )
+                      .toList();
+            }
+          });
+        },
       ),
     );
   }
@@ -352,414 +293,302 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
           },
         ),
         const SizedBox(width: 12),
-
-        // User profile avatar
-        GestureDetector(
-          onTap: _showProfileMenu,
-          child: Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 16,
-              backgroundColor: _getAvatarColor("Jayamurugan"),
-
-              child: Text(
-                _getInitials("J"),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
+        UserProfileView(
+          name: "Jayamurugan",
+          email: "jamu@gmail.com",
+          candidateId: "CAND-2025-GEG9IA",
         ),
       ],
     );
   }
 
-  Widget _buildOrganizationHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
-            spreadRadius: 1,
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Logo
-            Image.asset('assets/images/logo.png', fit: BoxFit.contain),
-            const SizedBox(width: 24),
-            // Organization details
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  'The Income Tax Department Co-operative Society Limited',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.indigo[800],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[100],
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '(REGD.No. MSCS/CR-11/90)',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey[700],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on, size: 16, color: Colors.red),
-                    const SizedBox(width: 4),
-                    Text(
-                      '121, MAHATHMA GANDHI SALAI, CHENNAI - 600 034.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildAssessmentCard(Assessment assessment) {
+    final String? baseColor = assessment.color;
+    final String assessmentType = assessment.type;
 
-  Widget _buildStatusOverview() {
-    final pendingCount =
-        _assessments.where((a) => a['status'] == 'pending').length;
-    final completedCount =
-        _assessments.where((a) => a['status'] == 'completed').length;
-    final notOpenedCount =
-        _assessments.where((a) => a['status'] == 'not_opened').length;
-    final totalCount = _assessments.length;
-
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Colors.indigo[900]!, Colors.indigo[700]!],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.indigo.withOpacity(0.3),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.analytics, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Assessment Progress',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
+    // Show progress indicator while loading status
+    return FutureBuilder<String>(
+      future: _prefsManager.getAssessmentStatus(assessmentType),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Card(
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+            ),
+          );
+        }
+        final status = snapshot.data!;
+        // Determine button style and text based on status
+        Widget actionButton;
+        switch (status) {
+          case AssessmentPreferencesManager.STATUS_PENDING:
+            actionButton = ElevatedButton(
+              onPressed: () async {
+                // Continue assessment
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => MCQAssessmentScreen(
+                          questions: assessment.questions,
+                          assessmentType: assessment.type,
+                        ),
+                  ),
+                );
+
+                // Refresh the list after returning
+                if (result == true) {
+                  _loadAllAssessments();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                elevation: 2,
+                shadowColor: Colors.orange.withOpacity(0.5),
+                shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  'Total: $totalCount',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Progress bar
-          ClipRRect(
-            borderRadius: BorderRadius.circular(8),
-            child: LinearProgressIndicator(
-              value: completedCount / totalCount,
-              backgroundColor: Colors.white.withOpacity(0.3),
-              color: Colors.white,
-              minHeight: 8,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildStatusChip(
-                'Pending',
-                pendingCount.toString(),
-                Colors.orange,
-                Icons.access_time,
-              ),
-              _buildStatusChip(
-                'Completed',
-                completedCount.toString(),
-                Colors.green,
-                Icons.check_circle,
-              ),
-              _buildStatusChip(
-                'Not Opened',
-                notOpenedCount.toString(),
-                Colors.grey,
-                Icons.lock_outline,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChip(
-    String title,
-    String count,
-    Color color,
-    IconData icon,
-  ) {
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: Colors.white,
-          child: Icon(icon, color: color, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              count,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.white.withOpacity(0.8),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAssessmentCard(Map<String, dynamic> assessment) {
-    final Color baseColor = assessment['color'];
-
-    // Determine button style and text based on status
-    Widget actionButton;
-    switch (assessment['status']) {
-      case 'pending':
-        actionButton = ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(context, assessment['route']);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shadowColor: Colors.orange.withOpacity(0.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text('Pending'),
-              SizedBox(width: 4),
-              Icon(Icons.access_time, size: 16),
-            ],
-          ),
-        );
-        break;
-      case 'completed':
-        actionButton = OutlinedButton(
-          onPressed: () {
-            // View results
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'You scored ${assessment['result']} in this assessment',
-                ),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          },
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.green[700],
-            side: BorderSide(color: Colors.green[700]!),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('View Results'),
-              const SizedBox(width: 4),
-              Icon(Icons.analytics, size: 16, color: Colors.green[700]),
-            ],
-          ),
-        );
-        break;
-      case 'not_opened':
-      default:
-        actionButton = ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamed(context, assessment['route']);
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: baseColor,
-            foregroundColor: Colors.white,
-            elevation: 2,
-            shadowColor: baseColor.withOpacity(0.5),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Text('Start Now'),
-              SizedBox(width: 4),
-              Icon(Icons.arrow_forward, size: 16),
-            ],
-          ),
-        );
-        break;
-    }
-
-    return Card(
-      elevation: 4,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: baseColor.withOpacity(0.3), width: 1),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Colors.white, baseColor.withOpacity(0.05)],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon and status row
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: baseColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: baseColor.withOpacity(0.3),
-                    spreadRadius: 1,
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Continue'),
+                  SizedBox(width: 4),
+                  Icon(Icons.check, size: 16),
                 ],
               ),
-              child: Icon(assessment['icon'], color: baseColor, size: 24),
-            ),
-            const SizedBox(height: 16),
+            );
+            break;
+          case AssessmentPreferencesManager.STATUS_COMPLETED:
+            actionButton = FutureBuilder<Map<String, dynamic>?>(
+              future: _prefsManager.getAssessmentResult(assessmentType),
+              builder: (context, resultSnapshot) {
+                final bool hasResult =
+                    resultSnapshot.hasData && resultSnapshot.data != null;
+                debugPrint('Assessment result: $hasResult');
+                return OutlinedButton(
+                  onPressed: () async {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Assessment was completed successfully!'),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.green[700],
+                    side: BorderSide(color: Colors.green[700]!),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Completed'),
+                      const SizedBox(width: 4),
+                      Icon(Icons.analytics, size: 16, color: Colors.green[700]),
+                    ],
+                  ),
+                );
+              },
+            );
+            break;
+          case AssessmentPreferencesManager.STATUS_NOT_OPENED:
+          default:
+            actionButton = ElevatedButton(
+              onPressed: () async {
+                // Mark assessment as started
+                await _prefsManager.markAssessmentAsStarted(assessmentType);
+                // Navigate to assessment screen
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => MCQAssessmentScreen(
+                          questions: assessment.questions,
+                          assessmentType: assessment.type,
+                        ),
+                  ),
+                );
 
-            // Title
-            Text(
-              assessment['title'],
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+                // Refresh the list after returning
+                if (result == true) {
+                  _loadAllAssessments();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _getColorFromString(baseColor!),
+                foregroundColor: Colors.white,
+                elevation: 2,
+                shadowColor: _getColorFromString(baseColor).withOpacity(0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Start Now'),
+                  SizedBox(width: 4),
+                  Icon(Icons.arrow_forward, size: 16),
+                ],
+              ),
+            );
+            break;
+        }
 
-            // Description
-            Expanded(
-              child: Text(
-                assessment['description'],
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
+        return Card(
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: _getColorFromString(baseColor!).withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white,
+                  _getColorFromString(baseColor).withOpacity(0.05),
+                ],
               ),
             ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top row with icon and status badge
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _getColorFromString(baseColor).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: _getColorFromString(
+                              baseColor,
+                            ).withOpacity(0.3),
+                            spreadRadius: 1,
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        _getIconFromString(assessment.icon!),
+                        color: _getColorFromString(baseColor),
+                        size: 24,
+                      ),
+                    ),
+                    const Spacer(),
+                    if (status ==
+                            AssessmentPreferencesManager.STATUS_COMPLETED ||
+                        status == AssessmentPreferencesManager.STATUS_PENDING)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton(
+                          icon: Icon(
+                            Icons.refresh,
+                            color: Colors.grey[600],
+                            size: 20,
+                          ),
+                          tooltip: 'Restart Assessment',
+                          onPressed: () async {
+                            final shouldRestart = await showDialog<bool>(
+                              context: context,
+                              builder:
+                                  (context) => AlertDialog(
+                                    title: const Text('Restart Assessment?'),
+                                    content: const Text(
+                                      'This will reset your progress for this assessment. '
+                                      'Are you sure you want to restart?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.pop(context, false),
+                                        child: const Text('CANCEL'),
+                                      ),
+                                      TextButton(
+                                        onPressed:
+                                            () => Navigator.pop(context, true),
+                                        child: const Text('RESTART'),
+                                      ),
+                                    ],
+                                  ),
+                            );
 
-            const SizedBox(height: 4),
+                            if (shouldRestart == true) {
+                              await _prefsManager.updateAssessmentStatus(
+                                assessmentType,
+                                AssessmentPreferencesManager.STATUS_NOT_OPENED,
+                              );
+                              _loadAllAssessments();
+                            }
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 16),
 
-            // Action button
-            SizedBox(width: double.infinity, child: actionButton),
-          ],
-        ),
-      ),
+                // Title
+                Text(
+                  assessment.title,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+
+                // Description
+                Expanded(
+                  child: Text(
+                    assessment.description,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Action button
+                SizedBox(width: double.infinity, child: actionButton),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -779,54 +608,9 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                 color: Colors.grey[600],
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Try adjusting your search or filters',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-            ),
           ],
         ),
       ),
-    );
-  }
-
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Filter Assessments'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CheckboxListTile(
-                  title: const Text('Easy'),
-                  value: true,
-                  onChanged: (value) {},
-                ),
-                CheckboxListTile(
-                  title: const Text('Medium'),
-                  value: true,
-                  onChanged: (value) {},
-                ),
-                CheckboxListTile(
-                  title: const Text('Hard'),
-                  value: true,
-                  onChanged: (value) {},
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Apply'),
-              ),
-            ],
-          ),
     );
   }
 }
