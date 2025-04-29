@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 
-class EmailSkillTestScreen extends StatefulWidget {
-  const EmailSkillTestScreen({super.key});
+class EmailAssessment extends StatefulWidget {
+  const EmailAssessment({super.key});
 
   @override
-  _EmailSkillTestScreenState createState() => _EmailSkillTestScreenState();
+  _EmailAssessmentState createState() => _EmailAssessmentState();
 }
 
-class _EmailSkillTestScreenState extends State<EmailSkillTestScreen> {
+class _EmailAssessmentState extends State<EmailAssessment> {
   final ScreenshotController _screenshotController = ScreenshotController();
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _ccController = TextEditingController();

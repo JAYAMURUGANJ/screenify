@@ -2,11 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:screenify/ui/screens/config_screen.dart';
 
 import '../../domain/local/db_helper.dart';
-import 'candidate_screen.dart';
-import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -66,13 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (candidate != null) {
           // Navigate to dashboard on successful login
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => CandidateScreeningPage(candidate: candidate),
-            ),
-          );
+          Navigator.pushReplacementNamed(context, '/Assessments');
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -316,13 +307,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 TextButton(
                                   onPressed: () {
-                                    Navigator.push(
+                                    Navigator.pushReplacementNamed(
                                       context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (context) =>
-                                                const RegistrationScreen(),
-                                      ),
+                                      '/Register',
                                     );
                                   },
                                   child: Text(
@@ -348,30 +335,6 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.center,
-                              child: TextButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const SettingsScreen(),
-                                    ),
-                                  );
-                                },
-                                icon: Icon(
-                                  Icons.settings,
-                                  color: Colors.blue[700],
-                                ),
-                                label: Text(
-                                  "Settings",
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.blue[700],
-                                  ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
                       ),

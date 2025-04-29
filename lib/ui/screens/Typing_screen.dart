@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 
-class TypingTestScreen extends StatefulWidget {
-  const TypingTestScreen({super.key});
+class TypingAssessment extends StatefulWidget {
+  const TypingAssessment({super.key});
 
   @override
-  _TypingTestScreenState createState() => _TypingTestScreenState();
+  _TypingAssessmentState createState() => _TypingAssessmentState();
 }
 
-class _TypingTestScreenState extends State<TypingTestScreen> {
+class _TypingAssessmentState extends State<TypingAssessment> {
   final ScreenshotController _screenshotController = ScreenshotController();
   final TextEditingController _typingController = TextEditingController();
   bool _testSubmitted = false;

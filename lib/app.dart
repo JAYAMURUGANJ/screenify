@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:screenify/ui/screens/excel_screen.dart';
 
+import 'ui/screens/Typing_screen.dart';
+import 'ui/screens/assessment_screen.dart';
+import 'ui/screens/email_screen.dart';
 import 'ui/screens/form_screen.dart';
 import 'ui/screens/login_screen.dart';
 import 'ui/screens/registration_screen.dart';
-import 'ui/screens/tech_assesment_screen.dart';
+import 'ui/screens/splash_screen.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -95,15 +98,14 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.system,
       initialRoute: '/',
       routes: {
-        // '/': (context) => const SplashScreen(),
-        '/memberShipForm': (context) => const MembershipForm(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegistrationScreen(),
-        // '/candidateScreen': (context) => const CandidateScreeningPage(),
-        '/technicalAssesment': (context) => const TechnicalAssesment(),
-        // '/': (context) => const TypingTestScreen(),
-        //'/': (context) => const EmailSkillTestScreen(),
-        '/': (context) => const ExcelSkillTestScreen(),
+        '/': (context) => const SplashScreen(),
+        '/FormFillingAssessment': (context) => const FormFillingAssessment(),
+        '/Assessments': (context) => const AssessmentsScreen(),
+        '/Login': (context) => const LoginScreen(),
+        '/Register': (context) => const RegistrationScreen(),
+        '/TypingAssessment': (context) => const TypingAssessment(),
+        '/EmailWritingAssessment': (context) => const EmailAssessment(),
+        '/ExcelAssessment': (context) => const ExcelAssessment(),
       },
     );
   }
