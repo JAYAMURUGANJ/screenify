@@ -95,14 +95,11 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
-        '/Assessments': (context) => const AssessmentsScreen(),
+        '/Assessments':
+            (context) =>
+                const AssessmentsScreen(candidateId: "CAND-2025-GEG9IA"),
         '/Login': (context) => const LoginScreen(),
         '/Register': (context) => const RegistrationScreen(),
-        // '/TypingAssessment': (context) => const TypingAssessment(),
-        // '/EmailWritingAssessment': (context) => const EmailAssessment(),
-        // '/ExcelAssessment': (context) => const ExcelAssessment(),
-        // '/MCQAssessment': (context) => const MCQAssessmentScreen(questions: []),
-        //'/FormFillingAssessment': (context) => const FormFillingAssessment(),
       },
     );
   }

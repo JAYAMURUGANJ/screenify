@@ -34,7 +34,7 @@ class Assessment {
   final List<String> hints;
   final String? instructions;
   final String? paragraph;
-  late final String? status;
+  String? status;
 
   Assessment({
     required this.type,
@@ -52,7 +52,7 @@ class Assessment {
     this.hints = const [],
     this.instructions,
     this.paragraph,
-    this.status,
+    this.status = 'not_opened',
   });
 
   factory Assessment.fromJson(Map<String, dynamic> json) {
@@ -72,7 +72,7 @@ class Assessment {
       hints: List<String>.from(json['hints'] ?? []),
       instructions: json['instructions'],
       paragraph: json['paragraph'],
-      status: json['status'],
+      status: json['status'] ?? 'not_opened',
       description: json['description'] ?? '',
       icon: json['icon'],
       color: json['color'],

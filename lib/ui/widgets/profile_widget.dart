@@ -2,8 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-import '../../domain/local/assessment_manager.dart';
-
 class UserProfileView extends StatelessWidget {
   final String name;
   final String email;
@@ -39,8 +37,6 @@ class UserProfileView extends StatelessWidget {
   }
 
   void _showProfileMenu(BuildContext context) {
-    final AssessmentPreferencesManager assessmentPreferencesManager =
-        AssessmentPreferencesManager();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -107,7 +103,7 @@ class UserProfileView extends StatelessWidget {
                   onTap: () async {
                     Navigator.pop(context);
                     // Implement your logout logic here
-                    await assessmentPreferencesManager.clearAllAssessmentData();
+                    //await assessmentPreferencesManager.clearAllAssessmentData();
                   },
                 ),
                 const SizedBox(height: 12),
