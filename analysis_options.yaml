@@ -15,6 +15,7 @@ analyzer:
     library_private_types_in_public_api: ignore
     dead_code: ignore
     constant_identifier_names: ignore
+    file_names: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

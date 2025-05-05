@@ -2,15 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenify/domain/local/assessment_manager.dart';
-import 'package:screenshot/screenshot.dart';
+import 'package:screenify/domain/model/assessment_data.dart';
+import 'package:screenify/ui/widgets/global_timer.dart';
+import 'package:screenify/utils/extension.dart';
+
+import '../widgets/candidate_profile.dart';
 
 class EmailAssessmentScreen extends StatefulWidget {
   final String assessmentType;
   final String candidateId;
-  final Map<String, dynamic> emailData;
+  final Assessment emailData; 
 
   const EmailAssessmentScreen({
     super.key,
@@ -24,7 +29,6 @@ class EmailAssessmentScreen extends StatefulWidget {
 }
 
 class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
-  final ScreenshotController _screenshotController = ScreenshotController();
   final TextEditingController _toController = TextEditingController();
   final TextEditingController _ccController = TextEditingController();
   final TextEditingController _subjectController = TextEditingController();
@@ -45,16 +49,14 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
 
   void _initializeScenario() {
     _scenario = EmailScenario(
-      title: widget.emailData['title'] ?? "Email Assessment",
-      instruction:
-          widget.emailData['instruction'] ?? "Write a professional email.",
-      expectedTo: widget.emailData['expectedTo'] ?? "",
-      expectedCc: widget.emailData['expectedCc'] ?? "",
-      expectedSubject: widget.emailData['expectedSubject'] ?? "",
-      expectedKeywords: List<String>.from(
-        widget.emailData['expectedKeywords'] ?? [],
-      ),
-      hints: List<String>.from(widget.emailData['hints'] ?? []),
+      title: widget.emailData.title,
+      description: widget.emailData.description,
+      instruction: widget.emailData.instruction ?? "",
+      expectedTo: widget.emailData.expectedTo ?? "",
+      expectedCc: widget.emailData.expectedCc ?? "",
+      expectedSubject: widget.emailData.expectedSubject ?? "",
+      expectedKeywords: List<String>.from(widget.emailData.expectedKeywords),
+      hints: List<String>.from(widget.emailData.hints),
     );
   }
 
@@ -250,9 +252,19 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       barrierDismissible: false,
       builder:
           (context) => AlertDialog(
-            title: Text('Submit Assessment?'),
+            title: Text(
+              'Submit Assessment?',
+              style: TextStyle(
+                color: Colors.blue[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: Text(
               'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
             actions: [
               TextButton(
@@ -262,7 +274,10 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
                     _testSubmitted = false; // Allow further editing
                   });
                 },
-                child: Text('CANCEL'),
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
               TextButton(
                 onPressed: () async {
@@ -276,7 +291,13 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
                     true,
                   ); // Return to assessment list with result
                 },
-                child: Text('SUBMIT'),
+                child: Text(
+                  'SUBMIT',
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -296,278 +317,374 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange[700],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.email, color: Colors.white, size: 24),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              'Email Skill Assessment',
-              style: GoogleFonts.poppins(
-                color: const Color(0xFF2C3E50),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () {
-              _showExitConfirmation(context);
-            },
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        appBar: _assessmentAppBar(context),
+        body: Container(color: Colors.grey[50], child: _buildWideLayout()),
       ),
-      body: Screenshot(
-        controller: _screenshotController,
-        child: Container(
-          color: Colors.grey[50],
+    );
+  }
+
+  Widget _buildWideLayout() {
+    return Row(
+      children: [
+        // Left sidebar - Branding and details
+        Container(
+          width: 300,
+          color: Colors.blue[700],
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      getIconFromString(widget.emailData.icon!),
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.emailData.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Hint',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Expanded(
+                child: ListView.builder(
+                  itemBuilder: (_, index) {
+                    final hint = _scenario.hints[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb,
+                            color: Colors.amber[700],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              hint,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemCount: _scenario.hints.length,
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.tips_and_updates,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Assessment Tips',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Read instructions carefully and double-check your work before submission.',
+                      style: TextStyle(color: Colors.blue[50], fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+
+        // Main content area
+        Expanded(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               children: [
+                // Scenario Card
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.assignment, color: Colors.blue[700]),
+                            const SizedBox(width: 8),
+                            Text(
+                              _scenario.description,
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Instructions:',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          _scenario.instruction,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Email Composition Section
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left side - Scenario and Instructions
-                      Expanded(
-                        flex: 2,
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.email, color: Colors.blue[700]),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Compose Email:',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue[700],
+                                ),
+                              ),
+                            ],
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.assignment,
-                                      color: Colors.orange[700],
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Scenario: ${_scenario.title}',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Instructions:',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  _scenario.instruction,
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                const SizedBox(height: 24),
-                                if (!_testSubmitted) ...[
-                                  Text(
-                                    'Hints:',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue[700],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  ..._scenario.hints.map(
-                                    (hint) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 4.0,
-                                      ),
-                                      child: Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Icon(
-                                            Icons.lightbulb_outline,
-                                            size: 16,
-                                            color: Colors.amber[700],
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(child: Text(hint)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                          const SizedBox(height: 16),
 
-                      const SizedBox(width: 16),
-
-                      // Right side - Email composition
-                      Expanded(
-                        flex: 3,
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                          // Email form fields
+                          _buildEmailField(
+                            controller: _toController,
+                            label: 'To',
+                            icon: Icons.person,
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.email,
-                                      color: Colors.orange[700],
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Compose Email:',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.orange[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 16),
-                                // Email form fields
-                                TextFormField(
-                                  controller: _toController,
-                                  enabled: !_testSubmitted,
-                                  decoration: InputDecoration(
-                                    labelText: 'To',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: Icon(Icons.person),
-                                    filled: true,
-                                    fillColor:
-                                        _testSubmitted
-                                            ? Colors.grey[200]
-                                            : Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _ccController,
-                                  enabled: !_testSubmitted,
-                                  decoration: InputDecoration(
-                                    labelText: 'CC',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: Icon(Icons.person_add),
-                                    filled: true,
-                                    fillColor:
-                                        _testSubmitted
-                                            ? Colors.grey[200]
-                                            : Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                TextFormField(
-                                  controller: _subjectController,
-                                  enabled: !_testSubmitted,
-                                  decoration: InputDecoration(
-                                    labelText: 'Subject',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    prefixIcon: Icon(Icons.subject),
-                                    filled: true,
-                                    fillColor:
-                                        _testSubmitted
-                                            ? Colors.grey[200]
-                                            : Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _bodyController,
-                                    maxLines: null,
-                                    expands: true,
-                                    enabled: !_testSubmitted,
-                                    textAlignVertical: TextAlignVertical.top,
-                                    decoration: InputDecoration(
-                                      labelText: 'Message',
-                                      alignLabelWithHint: true,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      filled: true,
-                                      fillColor:
-                                          _testSubmitted
-                                              ? Colors.grey[200]
-                                              : Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                          const SizedBox(height: 8),
+                          _buildEmailField(
+                            controller: _ccController,
+                            label: 'CC',
+                            icon: Icons.person_add,
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          _buildEmailField(
+                            controller: _subjectController,
+                            label: 'Subject',
+                            icon: Icons.subject,
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(child: _buildEmailBody()),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 16),
 
                 // Action buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: _testSubmitted ? _resetTest : _handleSubmit,
-                      icon: Icon(_testSubmitted ? Icons.refresh : Icons.check),
-                      label: Text(
-                        _testSubmitted ? 'Try Again' : 'Submit Email',
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange[700],
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ],
+                _buildActionButton(),
+
+                const SizedBox(height: 16),
+
+                // Footer
+                Text(
+                  '© ${DateTime.now().year} Screenify. All rights reserved.',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
                 ),
               ],
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildEmailField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      enabled: !_testSubmitted,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        prefixIcon: Icon(icon, color: Colors.blue[700]),
+        filled: true,
+        fillColor: _testSubmitted ? Colors.grey[100] : Colors.white,
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+        ),
       ),
+    );
+  }
+
+  Widget _buildEmailBody() {
+    return TextField(
+      controller: _bodyController,
+      maxLines: null,
+      expands: true,
+      enabled: !_testSubmitted,
+      textAlignVertical: TextAlignVertical.top,
+      decoration: InputDecoration(
+        labelText: 'Message',
+        alignLabelWithHint: true,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        filled: true,
+        fillColor: _testSubmitted ? Colors.grey[100] : Colors.white,
+        labelStyle: TextStyle(color: Colors.grey[700]),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Colors.blue[700]!, width: 2),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton.icon(
+        onPressed: _testSubmitted ? _resetTest : _handleSubmit,
+        icon: Icon(_testSubmitted ? Icons.refresh : Icons.check_circle),
+        label: Text(
+          _testSubmitted ? 'Try Again' : 'Submit Assessment',
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.blue[700],
+          foregroundColor: Colors.white,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      ),
+    );
+  }
+
+  AppBar _assessmentAppBar(BuildContext context) {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: Colors.white,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue[700],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.app_shortcut,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Screenify',
+            style: GoogleFonts.poppins(
+              color: Colors.blue[700],
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        GlobalTimerWidget(),
+        SizedBox(width: 5),
+        CandidateProfile(
+          name: widget.candidateId,
+          candidateId: widget.candidateId,
+        ),
+        SizedBox(width: 5),
+        IconButton(
+          icon: Icon(Icons.close, color: Colors.grey[700]),
+          onPressed: () {
+            _showExitConfirmation(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -576,22 +693,40 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Exit Assessment?'),
+            title: Text(
+              'Exit Assessment?',
+              style: TextStyle(
+                color: Colors.blue[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: const Text(
               'Your progress will be saved. You can continue this assessment later. '
               'Are you sure you want to exit?',
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context), // Close dialog
-                child: const Text('CANCEL'),
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                   Navigator.pop(context, true); // Return to assessment list
                 },
-                child: const Text('EXIT'),
+                child: Text(
+                  'EXIT',
+                  style: TextStyle(
+                    color: Colors.blue[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -602,6 +737,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
 // Email scenario model
 class EmailScenario {
   final String title;
+  final String description;
   final String instruction;
   final String expectedTo;
   final String expectedCc;
@@ -611,6 +747,7 @@ class EmailScenario {
 
   EmailScenario({
     required this.title,
+    required this.description,
     required this.instruction,
     required this.expectedTo,
     required this.expectedCc,

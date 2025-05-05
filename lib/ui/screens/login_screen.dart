@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../../domain/local/db_helper.dart';
+import '../../utils/app_route.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -62,27 +63,41 @@ class _LoginScreenState extends State<LoginScreen> {
         );
 
         if (candidate != null) {
-          // Navigate to dashboard on successful login
-          Navigator.pushReplacementNamed(context, '/Assessments');
+          // Use AppRouter for navigation instead of direct context
+          AppRouter.navigateAndReplace(
+            AppRouter.assessments,
+            arguments: _candidateIdController.text,
+          );
         } else {
+          // Show error message using the context-safe way
+          if (mounted) {
+            // Check if widget is still mounted
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Invalid Candidate ID or Date of Birth'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        // Show error with safety check
+        if (mounted) {
+          // Check if widget is still mounted
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invalid Candidate ID or Date of Birth'),
+            SnackBar(
+              content: Text('Login failed: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );
         }
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        // Only update state if widget is still mounted
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }

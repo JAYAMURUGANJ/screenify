@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:screenify/ui/screens/Typing_screen.dart';
 import 'package:screenify/ui/screens/email_screen.dart';
 import 'package:screenify/ui/screens/mcq_screen.dart';
 import 'package:screenify/ui/widgets/department_details.dart';
-import 'package:screenshot/screenshot.dart';
+import 'package:screenify/ui/widgets/global_timer.dart';
+import 'package:screenify/utils/extension.dart';
 
 import '../../domain/api/assessment_service.dart';
 import '../../domain/local/assessment_manager.dart';
 import '../../domain/model/assessment_data.dart';
-import '../widgets/profile_widget.dart';
-import '../widgets/time_counter.dart';
+import '../widgets/candidate_profile.dart';
 
 class AssessmentsScreen extends StatefulWidget {
   final String candidateId;
@@ -26,14 +27,11 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
   late TabController _tabController;
   final AssessmentService _assessmentService = AssessmentService();
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
-  final ScreenshotController _screenshotController =
-      ScreenshotController(); // For capturing screenshots
 
   bool _isLoading = true;
   List<Assessment> _assessments = [];
   List<Assessment> _filteredAssessments = [];
   late String _candidateName;
-  late String _candidateEmail;
   int _selectedTabIndex = 0;
 
   @override
@@ -42,7 +40,6 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_handleTabChange);
     _candidateName = "Candidate"; // Default value
-    _candidateEmail = "candidate@example.com"; // Default value
     _loadCandidateInfo();
     _loadAllAssessments();
   }
@@ -91,14 +88,12 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     super.dispose();
   }
 
-  // Load candidate information from the database
   Future<void> _loadCandidateInfo() async {
     try {
       // You would implement this to get candidate info from your database
       // For now, we'll use placeholder data
       setState(() {
         _candidateName = "Jayamurugan";
-        _candidateEmail = "jamu@gmail.com";
       });
     } catch (e) {
       debugPrint('Error loading candidate info: $e');
@@ -106,43 +101,6 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     }
   }
 
-  // Function to map icon string from JSON to IconData
-  IconData _getIconFromString(String iconName) {
-    switch (iconName) {
-      case 'quiz':
-        return Icons.quiz;
-      case 'email':
-        return Icons.email;
-      case 'keyboard':
-        return Icons.keyboard;
-      case 'assignment':
-        return Icons.assignment;
-      case 'table_chart':
-        return Icons.table_chart;
-      default:
-        return Icons.assessment;
-    }
-  }
-
-  // Function to map color string from JSON to Color
-  Color _getColorFromString(String colorName) {
-    switch (colorName) {
-      case 'purple':
-        return Colors.purple;
-      case 'orange':
-        return Colors.orange;
-      case 'green':
-        return Colors.green;
-      case 'blue':
-        return Colors.blue;
-      case 'teal':
-        return Colors.teal;
-      default:
-        return Colors.indigo;
-    }
-  }
-
-  // Function to load all assessments from the service and update their statuses
   Future<void> _loadAllAssessments() async {
     setState(() {
       _isLoading = true;
@@ -198,13 +156,15 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
       debugPrint('Error loading assessments: $e');
 
       // Show error to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to load assessments: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load assessments: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
 
       setState(() {
         _isLoading = false;
@@ -215,8 +175,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     }
   }
 
-  // Function to navigate to assessment screen based on type
-  Future<void> _navigateToAssessment(Assessment assessment) async {
+  Future _navigateToAssessment(Assessment assessment) async {
     // Set status to pending as soon as assessment is started
     await _dbHelper.updateAssessmentStatus(
       widget.candidateId,
@@ -238,74 +197,80 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
 
     // Determine which type of assessment to open
     if (assessment.type.toLowerCase().contains('email')) {
-      // Navigate to email assessment screen
-      final result = await Navigator.push(
+      // Navigate to email assessment screen using AppRouter
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder:
               (context) => EmailAssessmentScreen(
                 assessmentType: assessment.type,
                 candidateId: widget.candidateId,
-                emailData: {
-                  'title': assessment.title,
-                  'instruction': assessment.instruction,
-                  'expectedTo': assessment.expectedTo,
-                  'expectedCc': assessment.expectedCc,
-                  'expectedSubject': assessment.expectedSubject,
-                  'expectedKeywords': assessment.expectedKeywords,
-                  'hints': assessment.hints,
-                },
+                emailData: assessment,
               ),
         ),
       );
-
-      // Always reload the assessments list when returning from an assessment screen
-      // regardless of the result
-      _loadAllAssessments();
     } else if (assessment.type.toLowerCase().contains('mcq')) {
-      // Navigate to MCQ assessment screen (default)
+      // Navigate to MCQ assessment screen using AppRouter
       await Navigator.push(
         context,
         MaterialPageRoute(
           builder:
               (context) => MCQAssessmentScreen(
-                questions: assessment.questions,
-                assessmentType: assessment.type,
+                mcqData: assessment,
                 candidateId: widget.candidateId,
               ),
         ),
       );
-
-      // Always reload the assessments list when returning from an assessment screen
-      // regardless of the result
-      _loadAllAssessments();
+    } else if (assessment.type.toLowerCase().contains('typing')) {
+      // Navigate to typing assessment screen using AppRouter
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => TypingAssessmentScreen(
+                assessmentType: assessment.type,
+                candidateId: widget.candidateId,
+                typingData: assessment,
+              ),
+        ),
+      );
+    } else {
+      // Handle unknown assessment type
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unknown assessment type'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+
+    // Always reload the assessments list when returning from an assessment screen
+    _loadAllAssessments();
   }
 
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: Screenshot(
-        controller: _screenshotController,
-        child: Scaffold(
-          backgroundColor: Colors.grey[50],
-          appBar: _buildAppBar(),
-          body:
-              _isLoading
-                  ? _buildLoadingView()
-                  : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      DepartmentDetails(),
-                      // Tab Bar
-                      _buildTabBar(),
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: _buildAppBar(),
+        body:
+            _isLoading
+                ? _buildLoadingView()
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    DepartmentDetails(),
+                    // Tab Bar
+                    _buildTabBar(),
 
-                      // Assessments list
-                      _buildAssessmentList(),
-                    ],
-                  ),
-        ),
+                    // Assessments list
+                    _buildAssessmentList(),
+                  ],
+                ),
       ),
     );
   }
@@ -315,7 +280,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: Colors.indigo[700]),
+          CircularProgressIndicator(color: Colors.blue[700]),
           const SizedBox(height: 16),
           Text(
             'Loading assessments...',
@@ -343,14 +308,15 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
+                      color: const Color(0xFF2C3E50),
                     ),
                   ),
-                  // Add search and refresh buttons
+                  // Add refresh button
                   IconButton(
-                    icon: const Icon(Icons.refresh),
+                    icon: const Icon(Icons.restart_alt_outlined),
                     onPressed: _loadAllAssessments,
                     tooltip: 'Refresh assessment statuses',
+                    color: Colors.blue[700],
                   ),
                 ],
               ),
@@ -361,10 +327,11 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                   child: GridView.builder(
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 5,
+                          crossAxisCount:
+                              3, // Adjusted for better responsiveness
                           crossAxisSpacing: 20,
                           mainAxisSpacing: 16,
-                          childAspectRatio: 0.85,
+                          childAspectRatio: 1.2,
                         ),
                     itemCount: _filteredAssessments.length,
                     itemBuilder: (context, index) {
@@ -384,16 +351,17 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
       color: Colors.white,
       child: TabBar(
         controller: _tabController,
-        labelColor: Colors.indigo[700],
+        labelColor: Colors.blue[700],
         unselectedLabelColor: Colors.grey[600],
-        indicatorColor: Colors.indigo[700],
+        indicatorColor: Colors.blue[700],
         indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         tabs: const [
-          Tab(text: 'All'),
-          Tab(text: 'Pending'),
-          Tab(text: 'Completed'),
-          Tab(text: 'Not Opened'),
+          Tab(text: 'ALL'),
+          Tab(text: 'PENDING'),
+          Tab(text: 'COMPLETED'),
+          Tab(text: 'NOT OPENED'),
         ],
       ),
     );
@@ -408,14 +376,18 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.indigo[700],
+              color: Colors.blue[700],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.assessment, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.app_shortcut,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
           const SizedBox(width: 12),
           Text(
-            'My Assessments',
+            'Screenify',
             style: GoogleFonts.poppins(
               color: const Color(0xFF2C3E50),
               fontWeight: FontWeight.bold,
@@ -424,27 +396,9 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
         ],
       ),
       actions: [
-        CountdownTimer(
-          key: const ValueKey("assessmentTimer"),
-          durationInMinutes: 1,
-          autoStart: true,
-          onTimerComplete: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Time is up!'),
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: Colors.red,
-              ),
-            );
-          },
-        ),
+        GlobalTimerWidget(),
         const SizedBox(width: 12),
-        UserProfileView(
-          name: _candidateName,
-          email: _candidateEmail,
-          candidateId: widget.candidateId,
-        ),
-
+        CandidateProfile(name: _candidateName, candidateId: widget.candidateId),
         IconButton(
           icon: const Icon(Icons.restart_alt),
           tooltip: 'Reset Database (Debug)',
@@ -477,7 +431,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
 
             if (shouldReset == true) {
               final success = await _dbHelper.resetDatabase();
-              if (success) {
+              if (success && mounted) {
                 // The dashboard will auto-update, but we still need to update the list UI
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -487,7 +441,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                 );
                 // Reload assessments for the UI
                 _loadAllAssessments();
-              } else {
+              } else if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Failed to reset database'),
@@ -503,7 +457,6 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
   }
 
   Widget _buildAssessmentCard(Assessment assessment) {
-    final String? baseColor = assessment.color;
     final String assessmentType = assessment.type;
     final bool isEmailAssessment = assessmentType.toLowerCase().contains(
       'email',
@@ -513,18 +466,22 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     IconData assessmentIcon =
         isEmailAssessment
             ? Icons.email
-            : _getIconFromString(assessment.icon ?? 'assessment');
+            : getIconFromString(assessment.icon ?? 'assessment');
 
     // Show progress indicator while loading status
     return FutureBuilder<String>(
       future: _dbHelper.getAssessmentStatus(widget.candidateId, assessmentType),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          return const Card(
+          return Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Center(
               child: Padding(
-                padding: EdgeInsets.all(20.0),
-                child: CircularProgressIndicator(),
+                padding: const EdgeInsets.all(20.0),
+                child: CircularProgressIndicator(color: Colors.blue[700]),
               ),
             ),
           );
@@ -547,21 +504,14 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                 elevation: 2,
                 shadowColor: Colors.orange.withOpacity(0.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text('Continue'),
-                  SizedBox(width: 4),
-                  Icon(Icons.rotate_90_degrees_cw_outlined, size: 16),
-                ],
-              ),
+              child: Text('Continue'),
             );
             break;
           case AssessmentDatabaseHelper.STATUS_COMPLETED:
@@ -573,7 +523,6 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
               builder: (context, resultSnapshot) {
                 final hasResult =
                     resultSnapshot.hasData && resultSnapshot.data != null;
-
                 debugPrint('Assessment result for $assessmentType: $hasResult');
 
                 return OutlinedButton(
@@ -582,21 +531,14 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                     foregroundColor: Colors.green[700],
                     side: BorderSide(color: Colors.green[700]!),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Completed'),
-                      const SizedBox(width: 4),
-                      Icon(Icons.analytics, size: 16, color: Colors.green[700]),
-                    ],
-                  ),
+                  child: const Text('Completed'),
                 );
               },
             );
@@ -609,26 +551,19 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                 await _navigateToAssessment(assessment);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: _getColorFromString(baseColor!),
+                backgroundColor: Colors.blue[700],
                 foregroundColor: Colors.white,
                 elevation: 2,
-                shadowColor: _getColorFromString(baseColor).withOpacity(0.5),
+                shadowColor: Colors.blue.withOpacity(0.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text('Start Now'),
-                  SizedBox(width: 4),
-                  Icon(Icons.arrow_forward, size: 16),
-                ],
-              ),
+              child: Text('Start Now'),
             );
             break;
         }
@@ -638,10 +573,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
           shadowColor: Colors.black.withOpacity(0.1),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: _getColorFromString(baseColor!).withOpacity(0.3),
-              width: 1,
-            ),
+            side: BorderSide(color: Colors.blue[100]!, width: 1),
           ),
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -650,10 +582,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.white,
-                  _getColorFromString(baseColor).withOpacity(0.05),
-                ],
+                colors: [Colors.white, Colors.blue[50]!],
               ),
             ),
             child: Column(
@@ -665,13 +594,11 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: _getColorFromString(baseColor).withOpacity(0.2),
+                        color: Colors.blue[100],
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: _getColorFromString(
-                              baseColor,
-                            ).withOpacity(0.3),
+                            color: Colors.blue[300]!.withOpacity(0.3),
                             spreadRadius: 1,
                             blurRadius: 4,
                             offset: const Offset(0, 2),
@@ -680,7 +607,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                       ),
                       child: Icon(
                         assessmentIcon,
-                        color: _getColorFromString(baseColor),
+                        color: Colors.blue[700],
                         size: 24,
                       ),
                     ),
@@ -744,7 +671,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: const Color(0xFF2C3E50),
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -755,11 +682,15 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                 Expanded(
                   child: Text(
                     assessment.description,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
+
                 // Action button
                 SizedBox(width: double.infinity, child: actionButton),
               ],
@@ -790,7 +721,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
             const SizedBox(height: 8),
             Text(
               'Try changing filters or check back later',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[500]),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -798,7 +729,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
               icon: const Icon(Icons.refresh),
               label: const Text('Refresh'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo[700],
+                backgroundColor: Colors.blue[700],
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,

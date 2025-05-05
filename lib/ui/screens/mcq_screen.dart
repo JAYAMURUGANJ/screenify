@@ -2,19 +2,20 @@
 import 'dart:convert'; // Add this import for JSON encoding
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:screenify/ui/widgets/global_timer.dart';
+import 'package:screenify/utils/extension.dart';
 
 import '../../domain/local/assessment_manager.dart';
 import '../../domain/model/assessment_data.dart';
 
 class MCQAssessmentScreen extends StatefulWidget {
-  final List<Question>? questions;
-  final String? assessmentType;
+  final Assessment mcqData;
   final String? candidateId;
 
   const MCQAssessmentScreen({
     super.key,
-    required this.questions,
-    this.assessmentType,
+    required this.mcqData,
     required this.candidateId,
   });
 
@@ -29,6 +30,11 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
   late List<Question> _questions;
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
   bool _isSubmitting = false;
+
+  // Theme color to match login screen
+  final Color primaryColor = Colors.blue[700]!;
+  final Color secondaryColor = Colors.white;
+  final Color accentColor = Colors.blue[50]!;
 
   bool get _allQuestionsAnswered {
     return _questions.every((question) => question.isAnswered);
@@ -47,7 +53,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
     }
   }
 
-  Future<void> _generateJsonResultAndSave() async {
+  Future<void> saveAssessmentResult() async {
     if (_isSubmitting) return; // Prevent double submission
 
     setState(() {
@@ -74,6 +80,8 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
 
     // Create the final result object with completion timestamp
     Map<String, dynamic> result = {
+      'candidateId': widget.candidateId ?? '',
+      'assessmentType': widget.mcqData.type,
       'totalQuestions': _questions.length,
       'correctCount': correctCount,
       'wrongCount': wrongCount,
@@ -91,15 +99,20 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
     bool saved = false;
 
     // If assessmentType and candidateId are provided, save to database
-    if (widget.assessmentType != null && widget.candidateId != null) {
+    if (widget.candidateId != null) {
       try {
-        // Use the saveMCQAssessmentResult from the database helper
-        saved = await _dbHelper.saveMCQAssessmentResult(
+        // Use the saveAssessmentResult instead of saveMCQAssessmentResult
+        saved = await _dbHelper.saveAssessmentResult(
           widget.candidateId!,
-          widget.assessmentType!,
-          _questions,
-          correctCount,
-          wrongCount,
+          widget.mcqData.type,
+          result,
+        );
+
+        // Update the assessment status to completed
+        await _dbHelper.updateAssessmentStatus(
+          widget.candidateId!,
+          widget.mcqData.type,
+          AssessmentDatabaseHelper.STATUS_COMPLETED,
         );
       } catch (e) {
         debugPrint('Error saving assessment result: $e');
@@ -118,6 +131,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
           ),
           duration: const Duration(seconds: 3),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: primaryColor,
         ),
       );
     }
@@ -135,13 +149,13 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
   @override
   void initState() {
     super.initState();
-    _questions = widget.questions ?? [];
+    _questions = widget.mcqData.questions;
 
     // If assessmentType and candidateId are provided, mark it as started (pending)
-    if (widget.assessmentType != null && widget.candidateId != null) {
+    if (widget.candidateId != null) {
       _dbHelper.markAssessmentAsStarted(
         widget.candidateId!,
-        widget.assessmentType!,
+        widget.mcqData.type,
       );
     }
   }
@@ -155,19 +169,100 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('MCQ Assessment'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.help_outline),
-            onPressed: () {
-              _showInstructions();
-            },
+      backgroundColor: secondaryColor,
+      appBar: _assessmentAppBar(context),
+      body: _buildQuestionScreen(),
+    );
+  }
+
+  void _showExitConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text(
+              'Exit Assessment?',
+              style: TextStyle(
+                color: Color(0xFF2C3E50),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: const Text(
+              'Your progress will be saved. You can continue this assessment later. '
+              'Are you sure you want to exit?',
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context), // Close dialog
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close dialog
+                  Navigator.pop(context, true); // Return to assessment list
+                },
+                child: Text(
+                  'EXIT',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  AppBar _assessmentAppBar(BuildContext context) {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: secondaryColor,
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: primaryColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              getIconFromString(widget.mcqData.icon!),
+              color: secondaryColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            widget.mcqData.title,
+            style: GoogleFonts.poppins(
+              color: const Color(0xFF2C3E50),
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ],
       ),
-      body: _buildQuestionScreen(),
+      actions: [
+        GlobalTimerWidget(),
+        IconButton(
+          icon: Icon(Icons.help_outline, color: primaryColor),
+          onPressed: () {
+            _showInstructions();
+          },
+        ),
+        IconButton(
+          icon: Icon(Icons.close, color: primaryColor),
+          onPressed: () {
+            _showExitConfirmation(context);
+          },
+        ),
+      ],
     );
   }
 
@@ -176,7 +271,16 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Assessment Instructions'),
+            title: Text(
+              'Assessment Instructions',
+              style: TextStyle(
+                color: const Color(0xFF2C3E50),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             content: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +313,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                   const SizedBox(height: 8),
                   Text(
                     '• Blue indicator shows your current question.',
-                    style: TextStyle(fontSize: 14, color: Colors.blue[700]),
+                    style: TextStyle(fontSize: 14, color: primaryColor),
                   ),
                 ],
               ),
@@ -217,7 +321,13 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('GOT IT'),
+                child: Text(
+                  'GOT IT',
+                  style: TextStyle(
+                    color: primaryColor,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -238,6 +348,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: Color(0xFF2C3E50),
                 ),
               ),
               Text(
@@ -278,7 +389,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                         side: BorderSide(
-                          color: Colors.blue.withOpacity(0.5),
+                          color: primaryColor.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
@@ -290,10 +401,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                           gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [
-                              Colors.white,
-                              Colors.blue.withOpacity(0.1),
-                            ],
+                            colors: [secondaryColor, accentColor],
                           ),
                         ),
                         child: Text(
@@ -301,6 +409,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: Color(0xFF2C3E50),
                           ),
                         ),
                       ),
@@ -314,8 +423,8 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                           borderRadius: BorderRadius.circular(8),
                           color:
                               question.selectedAnswerIndex == optionIndex
-                                  ? Colors.blue.withOpacity(0.2)
-                                  : Colors.grey[200],
+                                  ? primaryColor.withOpacity(0.2)
+                                  : Colors.grey[50],
                           child: InkWell(
                             borderRadius: BorderRadius.circular(8),
                             onTap: () {
@@ -334,6 +443,11 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                                                 optionIndex
                                             ? FontWeight.bold
                                             : FontWeight.normal,
+                                    color:
+                                        question.selectedAnswerIndex ==
+                                                optionIndex
+                                            ? primaryColor
+                                            : Colors.black87,
                                   ),
                                 ),
                                 value: optionIndex,
@@ -343,7 +457,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                                     question.selectedAnswerIndex = value;
                                   });
                                 },
-                                activeColor: Colors.blue[700],
+                                activeColor: primaryColor,
                                 dense: true,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
@@ -370,9 +484,9 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
   Widget _buildProgressIndicator() {
     return LinearProgressIndicator(
       value: _answeredCount / _questions.length,
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.grey[200],
       valueColor: AlwaysStoppedAnimation<Color>(
-        _allQuestionsAnswered ? Colors.green : Colors.blue,
+        _allQuestionsAnswered ? Colors.green : primaryColor,
       ),
       minHeight: 8,
     );
@@ -382,7 +496,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: secondaryColor,
         boxShadow: [
           BoxShadow(
             color: Colors.grey.withOpacity(0.2),
@@ -416,7 +530,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                     decoration: BoxDecoration(
                       color:
                           _currentQuestionIndex == index
-                              ? Colors.blue[700]
+                              ? primaryColor
                               : (_questions[index].isAnswered
                                   ? Colors.green[700]
                                   : Colors.grey[300]),
@@ -425,7 +539,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                           _currentQuestionIndex == index
                               ? [
                                 BoxShadow(
-                                  color: Colors.blue.withOpacity(0.3),
+                                  color: primaryColor.withOpacity(0.3),
                                   spreadRadius: 1,
                                   blurRadius: 3,
                                 ),
@@ -491,8 +605,8 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                   icon: const Text('Next'),
                   label: const Icon(Icons.arrow_forward),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue[700],
-                    foregroundColor: Colors.white,
+                    backgroundColor: primaryColor,
+                    foregroundColor: secondaryColor,
                     elevation: 2,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -503,7 +617,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                 ElevatedButton.icon(
                   onPressed:
                       _allQuestionsAnswered && !_isSubmitting
-                          ? _generateJsonResultAndSave
+                          ? saveAssessmentResult
                           : null,
                   icon:
                       _isSubmitting
@@ -523,7 +637,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                         _allQuestionsAnswered
                             ? Colors.green[700]
                             : Colors.grey[400],
-                    foregroundColor: Colors.white,
+                    foregroundColor: secondaryColor,
                     elevation: _allQuestionsAnswered ? 2 : 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),

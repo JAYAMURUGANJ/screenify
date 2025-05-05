@@ -2,15 +2,13 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 
-class UserProfileView extends StatelessWidget {
+class CandidateProfile extends StatelessWidget {
   final String name;
-  final String email;
   final String candidateId;
 
-  const UserProfileView({
+  const CandidateProfile({
     super.key,
     required this.name,
-    required this.email,
     required this.candidateId,
   });
 
@@ -67,10 +65,6 @@ class UserProfileView extends StatelessWidget {
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
-                ),
-                Text(
-                  email,
-                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 6),
                 Text(

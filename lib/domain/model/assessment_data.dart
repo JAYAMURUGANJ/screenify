@@ -24,7 +24,6 @@ class Assessment {
   final String description;
   final String? icon;
   final String? color;
-  final String? route;
   final List<Question> questions;
   final String? instruction;
   final String? expectedTo;
@@ -42,7 +41,6 @@ class Assessment {
     required this.description,
     this.icon,
     this.color,
-    this.route,
     required this.questions,
     this.instruction,
     this.expectedTo,
@@ -76,7 +74,6 @@ class Assessment {
       description: json['description'] ?? '',
       icon: json['icon'],
       color: json['color'],
-      route: json['route'],
     );
   }
 
@@ -96,7 +93,6 @@ class Assessment {
     'status': status,
     'icon': icon,
     'color': color,
-    'route': route,
   };
 }
 
