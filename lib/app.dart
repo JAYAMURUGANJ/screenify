@@ -20,7 +20,8 @@ class MyApp extends StatelessWidget {
                   // This will now use post-frame callback internally
                   AppRouter.showGlobalDialog(
                     title: 'Time is Up!',
-                    message: 'Your assessment session has ended.',
+                    message:
+                        'Your assessment session has ended. Please submit your work.',
                     buttonText: 'OK',
                   );
                 },

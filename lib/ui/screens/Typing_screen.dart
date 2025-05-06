@@ -2,12 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:screenify/domain/local/assessment_manager.dart';
 import 'package:screenify/domain/model/assessment_data.dart';
+import 'package:screenify/ui/widgets/global_timer.dart';
 import 'package:screenify/utils/extension.dart';
 import 'package:screenshot/screenshot.dart';
+
+import '../widgets/candidate_profile.dart';
 
 class TypingAssessmentScreen extends StatefulWidget {
   final String assessmentType;
@@ -29,6 +33,10 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
   final ScreenshotController _screenshotController = ScreenshotController();
   final TextEditingController _typingController = TextEditingController();
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
+
+  // Define blue color to use throughout the app
+  final Color primaryBlue = Colors.blue;
+  final MaterialColor blueColor = Colors.blue;
 
   bool _testSubmitted = false;
   double _accuracy = 0.0;
@@ -215,9 +223,19 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
       barrierDismissible: false,
       builder:
           (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Submit Assessment?'),
-            content: const Text(
+            title: Text(
+              'Submit Assessment?',
+              style: TextStyle(
+                color: blueColor[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
               'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
             actions: [
               TextButton(
@@ -227,7 +245,10 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                     _testSubmitted = false; // Allow further editing
                   });
                 },
-                child: const Text('CANCEL'),
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
               TextButton(
                 onPressed: () async {
@@ -243,7 +264,13 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                     ); // Return to assessment list with result
                   }
                 },
-                child: const Text('SUBMIT'),
+                child: Text(
+                  'SUBMIT',
+                  style: TextStyle(
+                    color: blueColor[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),
@@ -261,193 +288,297 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _assessmentAppBar(),
-      body: Screenshot(
-        controller: _screenshotController,
-        child: Container(
-          color: Colors.grey[50],
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Left side - Reference text with formatting
-                      Expanded(
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Instruction section
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.assignment,
-                                          color: getColorFromString(
-                                            widget.typingData.color ?? 'blue',
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            widget.typingData.description,
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: getColorFromString(
-                                                widget.typingData.color ??
-                                                    'blue',
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        appBar: _assessmentAppBar(),
+        body: Screenshot(
+          controller: _screenshotController,
+          child: Container(color: Colors.grey[50], child: _buildWideLayout()),
+        ),
+      ),
+    );
+  }
 
-                                // Reference text heading
-                                Text(
-                                  widget.typingData.instructions!,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: SingleChildScrollView(
-                                    child: Text(
-                                      widget.typingData.paragraph ?? '',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(width: 16),
-
-                      // Right side - Typing area
-                      Expanded(
-                        child: Card(
-                          elevation: 4,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(
-                                      getIconFromString(
-                                        widget.typingData.icon ?? 'description',
-                                      ),
-                                      color: getColorFromString(
-                                        widget.typingData.color ?? 'blue',
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Type Here:',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: getColorFromString(
-                                          widget.typingData.color ?? 'blue',
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: _typingController,
-                                    maxLines: null,
-                                    expands: true,
-                                    enabled: !_testSubmitted,
-                                    textAlignVertical: TextAlignVertical.top,
-                                    decoration: InputDecoration(
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      hintText:
-                                          'Type here to match the text on the left side...',
-                                      filled: true,
-                                      fillColor:
-                                          _testSubmitted
-                                              ? Colors.grey[200]
-                                              : Colors.white,
-                                      alignLabelWithHint: true,
-                                    ),
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+  Widget _buildWideLayout() {
+    return Row(
+      children: [
+        // Left sidebar - Branding and instructions
+        Container(
+          width: 300,
+          color: blueColor[700],
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-
-                const SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
-                    ElevatedButton.icon(
-                      onPressed: _testSubmitted ? _resetTest : _handleSubmit,
-                      icon: Icon(
-                        _testSubmitted ? Icons.refresh : Icons.check_circle,
+                    Icon(
+                      getIconFromString(
+                        widget.typingData.icon ?? 'description',
                       ),
-                      label: Text(_testSubmitted ? 'Try Again' : 'Submit'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: getColorFromString(
-                          widget.typingData.color ?? 'blue',
-                        ),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        widget.typingData.title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 30),
+              const Text(
+                'Instructions',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 15),
+              Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.typingData.description,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.typingData.instructions ??
+                          'Type the text exactly as shown.',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.tips_and_updates,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(height: 10),
+                    const Text(
+                      'Assessment Tips',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Take your time and focus on accuracy. Pay attention to spelling, punctuation and formatting.',
+                      style: TextStyle(color: blueColor[50], fontSize: 13),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+
+        // Main content area
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                // Instructions Card
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.assignment, color: blueColor[700]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Typing Assessment',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: blueColor[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sample Text:',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[800],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          widget.typingData.paragraph ??
+                              'Type the text exactly as shown.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Typing Section
+                Expanded(
+                  child: Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.keyboard, color: blueColor[700]),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Type Here:',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: blueColor[700],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Expanded(
+                            child: TextField(
+                              controller: _typingController,
+                              maxLines: null,
+                              expands: true,
+                              enabled: !_testSubmitted,
+                              textAlignVertical: TextAlignVertical.top,
+                              decoration: InputDecoration(
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                hintText:
+                                    'Type here to match the sample text...',
+                                filled: true,
+                                fillColor:
+                                    _testSubmitted
+                                        ? Colors.grey[100]
+                                        : Colors.white,
+                                alignLabelWithHint: true,
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: BorderSide(
+                                    color: blueColor[700]!,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Action button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton.icon(
+                    onPressed: _testSubmitted ? _resetTest : _handleSubmit,
+                    icon: Icon(
+                      _testSubmitted ? Icons.refresh : Icons.check_circle,
+                    ),
+                    label: Text(
+                      _testSubmitted ? 'Try Again' : 'Submit Assessment',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: blueColor[700],
+                      foregroundColor: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Footer
+                Text(
+                  '© ${DateTime.now().year} Screenify. All rights reserved.',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
               ],
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -460,28 +591,35 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: getColorFromString(widget.typingData.color ?? 'blue'),
+              color: blueColor[700],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              getIconFromString(widget.typingData.icon ?? 'description'),
+            child: const Icon(
+              Icons.app_shortcut,
               color: Colors.white,
               size: 24,
             ),
           ),
           const SizedBox(width: 12),
           Text(
-            widget.typingData.title,
+            'Screenify',
             style: GoogleFonts.poppins(
-              color: getColorFromString(widget.typingData.color ?? 'blue'),
+              color: blueColor[700],
               fontWeight: FontWeight.bold,
             ),
           ),
         ],
       ),
       actions: [
+        const GlobalTimerWidget(),
+        const SizedBox(width: 5),
+        CandidateProfile(
+          name: widget.candidateId,
+          candidateId: widget.candidateId,
+        ),
+        const SizedBox(width: 5),
         IconButton(
-          icon: const Icon(Icons.close),
+          icon: Icon(Icons.close, color: Colors.grey[700]),
           onPressed: () {
             _showExitConfirmation();
           },
@@ -495,22 +633,37 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
       context: context,
       builder:
           (BuildContext dialogContext) => AlertDialog(
-            title: const Text('Exit Assessment?'),
+            title: Text(
+              'Exit Assessment?',
+              style: TextStyle(color: blueColor, fontWeight: FontWeight.bold),
+            ),
             content: const Text(
               'Your progress will be saved. You can continue this assessment later. '
               'Are you sure you want to exit?',
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext), // Close dialog
-                child: const Text('CANCEL'),
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.pop(dialogContext); // Close dialog
                   Navigator.pop(context, true); // Return to assessment list
                 },
-                child: const Text('EXIT'),
+                child: Text(
+                  'EXIT',
+                  style: TextStyle(
+                    color: blueColor[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
             ],
           ),

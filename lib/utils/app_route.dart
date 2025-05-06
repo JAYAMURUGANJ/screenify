@@ -23,7 +23,8 @@ class AppRouter {
     register: (context) => const RegistrationScreen(),
     assessments: (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
-      final candidateId = args is String ? args : ""; // Default value
+      final candidateId =
+          args is String ? args : "CAND-2025-GEG9IA"; // Default value
       return AssessmentsScreen(candidateId: candidateId);
     },
     // Add other routes here
