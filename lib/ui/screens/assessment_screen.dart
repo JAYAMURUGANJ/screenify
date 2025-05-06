@@ -12,6 +12,7 @@ import '../../domain/api/assessment_service.dart';
 import '../../domain/local/assessment_manager.dart';
 import '../../domain/model/assessment_data.dart';
 import '../widgets/candidate_profile.dart';
+import 'form_screen.dart';
 
 class AssessmentsScreen extends StatefulWidget {
   final String candidateId;
@@ -234,16 +235,20 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
               ),
         ),
       );
-    } else {
-      // Handle unknown assessment type
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unknown assessment type'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    }
+    if (assessment.type.toLowerCase().contains('form')) {
+      // Navigate to form assessment screen using AppRouter
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => FormFillingScreen(
+                assessmentType: assessment.type,
+                candidateId: widget.candidateId,
+                formData: assessment,
+              ),
+        ),
+      );
     }
 
     // Always reload the assessments list when returning from an assessment screen
@@ -328,7 +333,7 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount:
-                              3, // Adjusted for better responsiveness
+                              4, // Adjusted for better responsiveness
                           crossAxisSpacing: 20,
                           mainAxisSpacing: 16,
                           childAspectRatio: 1.2,
@@ -458,15 +463,9 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
 
   Widget _buildAssessmentCard(Assessment assessment) {
     final String assessmentType = assessment.type;
-    final bool isEmailAssessment = assessmentType.toLowerCase().contains(
-      'email',
-    );
 
     // Add a special icon for email assessments
-    IconData assessmentIcon =
-        isEmailAssessment
-            ? Icons.email
-            : getIconFromString(assessment.icon ?? 'assessment');
+    IconData assessmentIcon = getIconFromString(assessment.icon!);
 
     // Show progress indicator while loading status
     return FutureBuilder<String>(

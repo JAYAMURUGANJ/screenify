@@ -9,8 +9,8 @@ IconData getIconFromString(String iconName) {
       return Icons.email;
     case 'keyboard':
       return Icons.keyboard;
-    case 'assignment':
-      return Icons.assignment;
+    case 'edit_document':
+      return Icons.edit_document;
     case 'table_chart':
       return Icons.table_chart;
     default:

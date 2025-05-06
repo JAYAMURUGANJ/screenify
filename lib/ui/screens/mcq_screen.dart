@@ -231,7 +231,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
               ),
             ),
             content: const Text(
-              'Your progress will be saved. You can continue this assessment later. '
+              'You can continue this assessment later. '
               'Are you sure you want to exit?',
             ),
             shape: RoundedRectangleBorder(
@@ -275,11 +275,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
               color: Colors.blue[700],
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              getIconFromString(widget.mcqData.icon!),
-              color: Colors.white,
-              size: 24,
-            ),
+            child: Icon(Icons.app_shortcut, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 12),
           Text(
@@ -666,8 +662,8 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
       children: [
         // Previous Button
         SizedBox(
-          width: 120,
-          height: 48,
+          width: 125,
+          height: 50,
           child: ElevatedButton.icon(
             onPressed:
                 _currentQuestionIndex > 0
@@ -732,9 +728,7 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
                               ),
                             )
                             : const Icon(Icons.check_circle),
-                    label: Text(
-                      _isSubmitting ? 'Submitting...' : 'Submit Assessment',
-                    ),
+                    label: Text(_isSubmitting ? 'Submitting...' : 'Submit'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           _allQuestionsAnswered

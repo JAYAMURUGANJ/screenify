@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 import '../model/assessment_data.dart';
@@ -22,7 +23,7 @@ class AssessmentService {
       final Map<String, dynamic> jsonMap = json.decode(jsonString);
       _assessmentData = AssessmentData.fromJson(jsonMap);
     } catch (e) {
-      print('Error loading assessment data: $e');
+      debugPrint('Error loading assessment data: $e');
       // Create empty assessment data in case of error
       _assessmentData = AssessmentData(assessments: []);
     }
@@ -30,7 +31,7 @@ class AssessmentService {
 
   /// Generic: Get assessments by type
   List<Assessment> getAssessmentsByType(String type) {
-    return _assessmentData?.assessments
+    return _assessmentData?.assessments!
             .where((assessment) => assessment.type == type)
             .toList() ??
         [];
@@ -47,18 +48,18 @@ class AssessmentService {
 
   /// Get all assessment types available
   List<String> getAvailableAssessmentTypes() {
-    return _assessmentData?.assessments.map((a) => a.type).toSet().toList() ??
+    return _assessmentData?.assessments!.map((a) => a.type).toSet().toList() ??
         [];
   }
 
   /// Get total assessment count
   int getTotalAssessmentCount() {
-    return _assessmentData?.assessments.length ?? 0;
+    return _assessmentData?.assessments!.length ?? 0;
   }
 
   /// Get count of assessments by status
   int getAssessmentCountByStatus(String status) {
-    return _assessmentData?.assessments
+    return _assessmentData?.assessments!
             .where((assessment) => assessment.status == status)
             .length ??
         0;

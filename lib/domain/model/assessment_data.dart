@@ -34,6 +34,9 @@ class Assessment {
   final String? instructions;
   final String? paragraph;
   String? status;
+  FormFields? formFields;
+  EvaluationCriteria? evaluationCriteria;
+  List<String>? expectedFields;
 
   Assessment({
     required this.type,
@@ -51,6 +54,9 @@ class Assessment {
     this.instructions,
     this.paragraph,
     this.status = 'not_opened',
+    this.formFields,
+    this.evaluationCriteria,
+    this.expectedFields,
   });
 
   factory Assessment.fromJson(Map<String, dynamic> json) {
@@ -74,6 +80,15 @@ class Assessment {
       description: json['description'] ?? '',
       icon: json['icon'],
       color: json['color'],
+      formFields:
+          json['formFields'] != null
+              ? FormFields.fromJson(json['formFields'])
+              : null,
+      evaluationCriteria:
+          json['evaluationCriteria'] != null
+              ? EvaluationCriteria.fromJson(json['evaluationCriteria'])
+              : null,
+      expectedFields: List<String>.from(json['expectedFields'] ?? []),
     );
   }
 
@@ -93,6 +108,9 @@ class Assessment {
     'status': status,
     'icon': icon,
     'color': color,
+    'formFields': formFields?.toJson(),
+    'evaluationCriteria': evaluationCriteria?.toJson(),
+    'expectedFields': expectedFields,
   };
 }
 
@@ -130,4 +148,125 @@ class Question {
 
   /// Computed property: whether the selected answer is correct
   bool get isCorrect => selectedAnswerIndex == correctAnswerIndex;
+}
+
+class FormFields {
+  EmploymentInfo? employmentInfo;
+
+  FormFields({this.employmentInfo});
+
+  FormFields.fromJson(Map<String, dynamic> json) {
+    employmentInfo =
+        json['employmentInfo'] != null
+            ? EmploymentInfo.fromJson(json['employmentInfo'])
+            : null;
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    if (employmentInfo != null) {
+      data['employmentInfo'] = employmentInfo!.toJson();
+    }
+    return data;
+  }
+}
+
+class EmploymentInfo {
+  String? name;
+  String? gender;
+  String? maritalStatus;
+  String? fatherName;
+  String? dateOfBirth;
+  bool? photoRequired;
+  String? dateOfAppointment;
+  String? govtServiceDetails;
+  String? incomeTaxDeptDetails;
+  String? dateOfRetirement;
+  String? currentOffice;
+  String? designation;
+  String? employmentStatus;
+  String? basicPay;
+
+  EmploymentInfo({
+    this.name,
+    this.gender,
+    this.maritalStatus,
+    this.fatherName,
+    this.dateOfBirth,
+    this.photoRequired,
+    this.dateOfAppointment,
+    this.govtServiceDetails,
+    this.incomeTaxDeptDetails,
+    this.dateOfRetirement,
+    this.currentOffice,
+    this.designation,
+    this.employmentStatus,
+    this.basicPay,
+  });
+
+  EmploymentInfo.fromJson(Map<String, dynamic> json) {
+    name = json['name'];
+    gender = json['gender'];
+    maritalStatus = json['maritalStatus'];
+    fatherName = json['fatherName'];
+    dateOfBirth = json['dateOfBirth'];
+    photoRequired = json['photoRequired'];
+    dateOfAppointment = json['dateOfAppointment'];
+    govtServiceDetails = json['govtServiceDetails'];
+    incomeTaxDeptDetails = json['incomeTaxDeptDetails'];
+    dateOfRetirement = json['dateOfRetirement'];
+    currentOffice = json['currentOffice'];
+    designation = json['designation'];
+    employmentStatus = json['employmentStatus'];
+    basicPay = json['basicPay'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['name'] = name;
+    data['gender'] = gender;
+    data['maritalStatus'] = maritalStatus;
+    data['fatherName'] = fatherName;
+    data['dateOfBirth'] = dateOfBirth;
+    data['photoRequired'] = photoRequired;
+    data['dateOfAppointment'] = dateOfAppointment;
+    data['govtServiceDetails'] = govtServiceDetails;
+    data['incomeTaxDeptDetails'] = incomeTaxDeptDetails;
+    data['dateOfRetirement'] = dateOfRetirement;
+    data['currentOffice'] = currentOffice;
+    data['designation'] = designation;
+    data['employmentStatus'] = employmentStatus;
+    data['basicPay'] = basicPay;
+    return data;
+  }
+}
+
+class EvaluationCriteria {
+  String? completeness;
+  String? accuracy;
+  String? formatAdherence;
+  String? attention;
+
+  EvaluationCriteria({
+    this.completeness,
+    this.accuracy,
+    this.formatAdherence,
+    this.attention,
+  });
+
+  EvaluationCriteria.fromJson(Map<String, dynamic> json) {
+    completeness = json['completeness'];
+    accuracy = json['accuracy'];
+    formatAdherence = json['formatAdherence'];
+    attention = json['attention'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['completeness'] = completeness;
+    data['accuracy'] = accuracy;
+    data['formatAdherence'] = formatAdherence;
+    data['attention'] = attention;
+    return data;
+  }
 }

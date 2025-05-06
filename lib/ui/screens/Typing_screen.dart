@@ -1,10 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:screenify/domain/local/assessment_manager.dart';
 import 'package:screenify/domain/model/assessment_data.dart';
 import 'package:screenify/ui/widgets/global_timer.dart';
@@ -200,23 +198,6 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
     }
   }
 
-  Future<void> _saveResultsToFile(Map<String, dynamic> results) async {
-    try {
-      final directory = await getApplicationDocumentsDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final path =
-          '${directory.path}/typing_results_${widget.candidateId}_$timestamp.json';
-
-      // Write the JSON to a file
-      final File file = File(path);
-      await file.writeAsString(
-        const JsonEncoder.withIndent('  ').convert(results),
-      );
-    } catch (e) {
-      debugPrint('Error saving results to file: $e');
-    }
-  }
-
   void _showSubmissionConfirmation(Map<String, dynamic> results) {
     showDialog(
       context: context,
@@ -254,7 +235,6 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                 onPressed: () async {
                   // Save results
                   await _saveResults(results);
-                  await _saveResultsToFile(results);
 
                   Navigator.pop(dialogContext); // Close dialog
                   if (mounted) {
@@ -550,7 +530,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                       _testSubmitted ? Icons.refresh : Icons.check_circle,
                     ),
                     label: Text(
-                      _testSubmitted ? 'Try Again' : 'Submit Assessment',
+                      _testSubmitted ? 'Try Again' : 'Submit',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -638,7 +618,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
               style: TextStyle(color: blueColor, fontWeight: FontWeight.bold),
             ),
             content: const Text(
-              'Your progress will be saved. You can continue this assessment later. '
+              'You can continue this assessment later. '
               'Are you sure you want to exit?',
             ),
             shape: RoundedRectangleBorder(

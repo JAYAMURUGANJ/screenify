@@ -20,19 +20,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.app_shortcut, size: 100, color: Colors.white),
-            SizedBox(height: 24),
-            Text(
+            Icon(Icons.app_shortcut, size: 100, color: Colors.blue[700]),
+            const SizedBox(height: 24),
+            const Text(
               'Screenify',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 48),
-            CircularProgressIndicator(),
+            const SizedBox(height: 48),
+            const CircularProgressIndicator(),
           ],
         ),
       ),
