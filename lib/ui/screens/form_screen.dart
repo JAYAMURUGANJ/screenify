@@ -58,6 +58,8 @@ class _FormFillingAssessmentScreenState
 
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
 
+  bool _isSubmitting = false;
+
   // Define blue color to use throughout the app
   final Color primaryBlue = Colors.blue;
   final MaterialColor blueColor = Colors.blue;
@@ -88,73 +90,15 @@ class _FormFillingAssessmentScreenState
     }
   }
 
-  Future<void> _showSubmissionConfirmation() async {
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: Text(
-            'Confirm Submission',
-            style: TextStyle(
-              color: blueColor[700],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: const <Widget>[
-                Text('Are you sure you want to submit this form?'),
-                SizedBox(height: 8),
-                Text('Once submitted, you cannot modify your responses.'),
-              ],
-            ),
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text('CANCEL', style: TextStyle(color: Colors.grey[600])),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: blueColor[700],
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('SUBMIT'),
-              onPressed: () async {
-                Navigator.of(dialogContext).pop();
-
-                // Update status to completed
-                await _dbHelper.updateAssessmentStatus(
-                  widget.candidateId,
-                  widget.formFillingData.type,
-                  AssessmentDatabaseHelper.STATUS_COMPLETED,
-                );
-                Navigator.pop(
-                  context,
-                  true,
-                ); // Return result to assessment list
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _evaluateForm(EmploymentInfo employmentInfo) async {
+  Map<String, dynamic> _calculateScore() {
+    var employmentInfo = widget.formFillingData.employmentInfo;
     if (_formKey.currentState!.validate()) {
       List<String> mismatchFields = [];
       int totalFields = 8;
       int correctCount = 0;
 
       if (_nameController.text.trim().toUpperCase() ==
-          employmentInfo.name!.toUpperCase()) {
+          employmentInfo!.name!.toUpperCase()) {
         correctCount++;
       } else {
         mismatchFields.add('Name');
@@ -209,6 +153,10 @@ class _FormFillingAssessmentScreenState
 
       double score = (correctCount / totalFields) * 100;
 
+      setState(() {
+        _isSubmitting = true;
+      });
+
       Map<String, dynamic> assessmentResult = {
         'submissionDate': DateTime.now().toIso8601String(),
         'formDetails': {
@@ -235,18 +183,137 @@ class _FormFillingAssessmentScreenState
         'status': 'submitted',
       };
 
-      // Save assessment result to DB
+      return assessmentResult;
+    }
+    throw Exception('Form validation failed. Please fill all required fields.');
+  }
+
+  Future<void> _handleSubmit() async {
+    // Get evaluation results
+    final Map<String, dynamic> results = _calculateScore();
+    // Print results to terminal as a single string
+    debugPrint(results.toString());
+    // Show confirmation dialog
+    _showSubmissionConfirmation(results);
+  }
+
+  Future<void> _saveResults(Map<String, dynamic> results) async {
+    try {
+      // Update assessment status to completed
+      await _dbHelper.updateAssessmentStatus(
+        widget.candidateId,
+        widget.formFillingData.type,
+        AssessmentDatabaseHelper.STATUS_COMPLETED,
+      );
+
+      // Save assessment results
       await _dbHelper.saveAssessmentResult(
         widget.candidateId,
         widget.formFillingData.type,
-        assessmentResult,
+        results,
       );
-
-      debugPrint('Assessment result saved, awaiting confirmation.');
-
-      // Show final confirmation dialog after saving result
-      _showSubmissionConfirmation();
+    } catch (e) {
+      debugPrint('Error saving assessment results: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to save results to database: ${e.toString()}',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
+
+  void _showSubmissionConfirmation(Map<String, dynamic> results) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (BuildContext dialogContext) => AlertDialog(
+            title: Text(
+              'Submit Assessment?',
+              style: TextStyle(
+                color: blueColor[700],
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: Text(
+              'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+              style: TextStyle(color: Colors.grey[700]),
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(dialogContext); // Close dialog
+                  setState(() {
+                    _isSubmitting = false; // Allow further editing
+                  });
+                },
+                child: Text(
+                  'CANCEL',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Save results
+                  await _saveResults(results);
+
+                  Navigator.pop(dialogContext); // Close dialog
+                  if (mounted) {
+                    Navigator.pop(
+                      context,
+                      true,
+                    ); // Return to assessment list with result
+                  }
+                },
+                child: Text(
+                  'SUBMIT',
+                  style: TextStyle(
+                    color: blueColor[700],
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _resetTest() {
+    setState(() {
+      _isSubmitting = false;
+      _nameController.clear();
+      _fatherHusbandNameController.clear();
+      _dobController.clear();
+      _appointmentDateController.clear();
+      _govtServiceController.clear();
+      _incomeTaxDeptController.clear();
+      _retirementDateController.clear();
+      _officeController.clear();
+      _designationController.clear();
+      _basicPayController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        appBar: _assessmentAppBar(),
+        body: Screenshot(
+          controller: _screenshotController,
+          child: Container(color: Colors.grey[50], child: _buildWideLayout()),
+        ),
+      ),
+    );
   }
 
   void _showExitConfirmation() {
@@ -287,20 +354,6 @@ class _FormFillingAssessmentScreenState
               ),
             ],
           ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
-      child: Scaffold(
-        appBar: _assessmentAppBar(),
-        body: Screenshot(
-          controller: _screenshotController,
-          child: Container(color: Colors.grey[50], child: _buildWideLayout()),
-        ),
-      ),
     );
   }
 
@@ -924,10 +977,7 @@ class _FormFillingAssessmentScreenState
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
-                      onPressed:
-                          () => _evaluateForm(
-                            widget.formFillingData.employmentInfo!,
-                          ),
+                      onPressed: _isSubmitting ? _resetTest : _handleSubmit,
                       icon: const Icon(Icons.check_circle),
                       label: const Text(
                         'SUBMIT ',

@@ -31,7 +31,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
   final TextEditingController _bodyController = TextEditingController();
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
 
-  bool _testSubmitted = false;
+  bool _isSubmitting = false;
   DateTime? _startTime;
   late EmailScenario _scenario;
 
@@ -76,7 +76,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
     }
   }
 
-  Map<String, dynamic> _evaluateEmail() {
+  Map<String, dynamic> _calculateScore() {
     int errors = 0;
     int totalPoints = 0;
     int earnedPoints = 0;
@@ -162,7 +162,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
     int timeInSeconds = endTime.difference(_startTime!).inSeconds;
 
     setState(() {
-      _testSubmitted = true;
+      _isSubmitting = true;
     });
 
     // Prepare result JSON
@@ -190,7 +190,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
 
   Future<void> _handleSubmit() async {
     // Get evaluation results
-    Map<String, dynamic> results = _evaluateEmail();
+    Map<String, dynamic> results = _calculateScore();
 
     // Print results to terminal as a single string
     debugPrint(const JsonEncoder().convert(results));
@@ -250,7 +250,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
                 onPressed: () {
                   Navigator.pop(context); // Close dialog
                   setState(() {
-                    _testSubmitted = false; // Allow further editing
+                    _isSubmitting = false; // Allow further editing
                   });
                 },
                 child: Text(
@@ -288,7 +288,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       _ccController.clear();
       _subjectController.clear();
       _bodyController.clear();
-      _testSubmitted = false;
+      _isSubmitting = false;
       _startTime = DateTime.now();
     });
   }
@@ -561,13 +561,13 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
   }) {
     return TextFormField(
       controller: controller,
-      enabled: !_testSubmitted,
+      enabled: !_isSubmitting,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         prefixIcon: Icon(icon, color: Colors.blue[700]),
         filled: true,
-        fillColor: _testSubmitted ? Colors.grey[100] : Colors.white,
+        fillColor: _isSubmitting ? Colors.grey[100] : Colors.white,
         labelStyle: TextStyle(color: Colors.grey[700]),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -582,14 +582,14 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       controller: _bodyController,
       maxLines: null,
       expands: true,
-      enabled: !_testSubmitted,
+      enabled: !_isSubmitting,
       textAlignVertical: TextAlignVertical.top,
       decoration: InputDecoration(
         labelText: 'Message',
         alignLabelWithHint: true,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         filled: true,
-        fillColor: _testSubmitted ? Colors.grey[100] : Colors.white,
+        fillColor: _isSubmitting ? Colors.grey[100] : Colors.white,
         labelStyle: TextStyle(color: Colors.grey[700]),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -604,10 +604,10 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       width: double.infinity,
       height: 50,
       child: ElevatedButton.icon(
-        onPressed: _testSubmitted ? _resetTest : _handleSubmit,
-        icon: Icon(_testSubmitted ? Icons.refresh : Icons.check_circle),
+        onPressed: _isSubmitting ? _resetTest : _handleSubmit,
+        icon: Icon(_isSubmitting ? Icons.refresh : Icons.check_circle),
         label: Text(
-          _testSubmitted ? 'Try Again' : 'Submit',
+          _isSubmitting ? 'Try Again' : 'Submit',
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(

@@ -55,6 +55,32 @@ class _McqAssessmentScreenState extends State<McqAssessmentScreen> {
     }
   }
 
+  Future<void> _saveResults(Map<String, dynamic> results) async {
+    try {
+      // Use the saveAssessmentResult method
+      await _dbHelper.saveAssessmentResult(
+        widget.candidateId!,
+        widget.mcqData.type,
+        results,
+      );
+
+      // Update the assessment status to completed
+      await _dbHelper.updateAssessmentStatus(
+        widget.candidateId!,
+        widget.mcqData.type,
+        AssessmentDatabaseHelper.STATUS_COMPLETED,
+      );
+    } catch (e) {
+      debugPrint('Error saving assessment results: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to save results to database: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _handleSubmit() async {
     if (_isSubmitting) return; // Prevent double submission
 
@@ -143,26 +169,8 @@ class _McqAssessmentScreenState extends State<McqAssessmentScreen> {
               ),
               TextButton(
                 onPressed: () async {
-                  // Save to database if candidateId is provided
-                  if (widget.candidateId != null) {
-                    try {
-                      // Use the saveAssessmentResult method
-                      await _dbHelper.saveAssessmentResult(
-                        widget.candidateId!,
-                        widget.mcqData.type,
-                        results,
-                      );
-
-                      // Update the assessment status to completed
-                      await _dbHelper.updateAssessmentStatus(
-                        widget.candidateId!,
-                        widget.mcqData.type,
-                        AssessmentDatabaseHelper.STATUS_COMPLETED,
-                      );
-                    } catch (e) {
-                      debugPrint('Error saving assessment result: $e');
-                    }
-                  }
+                  // Save results
+                  await _saveResults(results);
 
                   Navigator.pop(context); // Close dialog
                   Navigator.pop(

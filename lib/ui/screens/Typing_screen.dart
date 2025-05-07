@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,7 +32,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
   final Color primaryBlue = Colors.blue;
   final MaterialColor blueColor = Colors.blue;
 
-  bool _testSubmitted = false;
+  bool _isSubmitting = false;
   double _accuracy = 0.0;
   DateTime? _startTime;
 
@@ -71,7 +69,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
     }
   }
 
-  Map<String, dynamic> _evaluateTyping() {
+  Map<String, dynamic> _calculateScore() {
     final String userTypedText = _typingController.text.trim();
     final String sampleText = widget.typingData.paragraph!.trim();
 
@@ -131,7 +129,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
             : 0;
 
     setState(() {
-      _testSubmitted = true;
+      _isSubmitting = true;
       _accuracy = accuracy;
     });
 
@@ -155,11 +153,9 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
 
   Future<void> _handleSubmit() async {
     // Get evaluation results
-    final Map<String, dynamic> results = _evaluateTyping();
-
+    final Map<String, dynamic> results = _calculateScore();
     // Print results to terminal as a single string
-    debugPrint(const JsonEncoder.withIndent('  ').convert(results));
-
+    debugPrint(results.toString());
     // Show confirmation dialog
     _showSubmissionConfirmation(results);
   }
@@ -219,7 +215,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                 onPressed: () {
                   Navigator.pop(dialogContext); // Close dialog
                   setState(() {
-                    _testSubmitted = false; // Allow further editing
+                    _isSubmitting = false; // Allow further editing
                   });
                 },
                 child: Text(
@@ -256,7 +252,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
   void _resetTest() {
     setState(() {
       _typingController.clear();
-      _testSubmitted = false;
+      _isSubmitting = false;
       _accuracy = 0.0;
       _startTime = DateTime.now();
     });
@@ -483,7 +479,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                               controller: _typingController,
                               maxLines: null,
                               expands: true,
-                              enabled: !_testSubmitted,
+                              enabled: !_isSubmitting,
                               textAlignVertical: TextAlignVertical.top,
                               decoration: InputDecoration(
                                 border: OutlineInputBorder(
@@ -493,7 +489,7 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                                     'Type here to match the sample text...',
                                 filled: true,
                                 fillColor:
-                                    _testSubmitted
+                                    _isSubmitting
                                         ? Colors.grey[100]
                                         : Colors.white,
                                 alignLabelWithHint: true,
@@ -521,12 +517,12 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton.icon(
-                    onPressed: _testSubmitted ? _resetTest : _handleSubmit,
+                    onPressed: _isSubmitting ? _resetTest : _handleSubmit,
                     icon: Icon(
-                      _testSubmitted ? Icons.refresh : Icons.check_circle,
+                      _isSubmitting ? Icons.refresh : Icons.check_circle,
                     ),
                     label: Text(
-                      _testSubmitted ? 'Try Again' : 'Submit',
+                      _isSubmitting ? 'Try Again' : 'Submit',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
