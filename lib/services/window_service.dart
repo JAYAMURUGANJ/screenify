@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:win32/win32.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../utils/win32_utils.dart';
+import 'win32_utils.dart';
 
 class WindowService {
   // Singleton pattern

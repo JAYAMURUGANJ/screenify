@@ -7,8 +7,6 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import '../model/assessment_data.dart';
-
 class AssessmentDatabaseHelper {
   static final AssessmentDatabaseHelper _instance =
       AssessmentDatabaseHelper._internal();
@@ -224,7 +222,13 @@ class AssessmentDatabaseHelper {
     for (var row in results) {
       resultsMap[row['assessment_type']] = jsonDecode(row['result_data']);
     }
-    return resultsMap;
+
+    return {
+      "candidateId": candidateId,
+      "date_time": DateTime.now().toIso8601String(),
+      "status": await getAllAssessmentStatuses(candidateId),
+      "assessment": resultsMap,
+    };
   }
 
   // Clear all assessment data for a candidate (for logout or reset)
@@ -283,43 +287,6 @@ class AssessmentDatabaseHelper {
   ) async {
     return await getAssessmentStatus(candidateId, assessmentType) ==
         STATUS_COMPLETED;
-  }
-
-  // Helper method to save MCQ assessment result with a specific format
-  Future<bool> saveMCQAssessmentResult(
-    String candidateId,
-    String assessmentType,
-    List<Question> questions,
-    int correctCount,
-    int wrongCount,
-  ) async {
-    // Create a map for all questions with their selected answers
-    List<Map<String, dynamic>> questionsData =
-        questions.map((question) {
-          return {
-            'question': question.question,
-            'selectedAnswerIndex': question.selectedAnswerIndex,
-            'correctAnswerIndex': question.correctAnswerIndex,
-            'isCorrect':
-                question.selectedAnswerIndex == question.correctAnswerIndex,
-          };
-        }).toList();
-
-    // Create the final result object
-    Map<String, dynamic> result = {
-      'totalQuestions': questions.length,
-      'correctCount': correctCount,
-      'wrongCount': wrongCount,
-      'score': correctCount,
-      'scorePercentage': (correctCount / questions.length * 100)
-          .toStringAsFixed(1),
-      'questions': questionsData,
-      'completedAt': DateTime.now().toIso8601String(),
-    };
-
-    // Save the result and mark as completed
-    await saveAssessmentResult(candidateId, assessmentType, result);
-    return await markAssessmentAsCompleted(candidateId, assessmentType);
   }
 
   // Reset the database completely (for testing or recovery)

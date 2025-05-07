@@ -3,21 +3,19 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:screenify/domain/local/assessment_manager.dart';
-import 'package:screenify/domain/model/assessment_data.dart';
+import 'package:screenify/domain/local/assessment_helper.dart';
+import 'package:screenify/domain/model/assessment_question.dart';
 import 'package:screenify/ui/widgets/global_timer.dart';
 import 'package:screenify/utils/extension.dart';
 
 import '../widgets/candidate_profile.dart';
 
 class EmailAssessmentScreen extends StatefulWidget {
-  final String assessmentType;
   final String candidateId;
   final Assessment emailData;
 
   const EmailAssessmentScreen({
     super.key,
-    required this.assessmentType,
     required this.candidateId,
     required this.emailData,
   });
@@ -49,7 +47,7 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
     _scenario = EmailScenario(
       title: widget.emailData.title,
       description: widget.emailData.description,
-      instruction: widget.emailData.instruction ?? "",
+      instruction: widget.emailData.instructions ?? "",
       expectedTo: widget.emailData.expectedTo ?? "",
       expectedCc: widget.emailData.expectedCc ?? "",
       expectedSubject: widget.emailData.expectedSubject ?? "",
@@ -62,14 +60,14 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
     try {
       final status = await _dbHelper.getAssessmentStatus(
         widget.candidateId,
-        widget.assessmentType,
+        widget.emailData.type,
       );
 
       // If assessment is not started yet, update to pending
       if (status == AssessmentDatabaseHelper.STATUS_NOT_OPENED) {
         await _dbHelper.updateAssessmentStatus(
           widget.candidateId,
-          widget.assessmentType,
+          widget.emailData.type,
           AssessmentDatabaseHelper.STATUS_PENDING,
         );
       }
@@ -169,8 +167,6 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
 
     // Prepare result JSON
     Map<String, dynamic> results = {
-      'candidateId': widget.candidateId,
-      'assessmentType': widget.assessmentType,
       'accuracy': accuracy,
       'timeInSeconds': timeInSeconds,
       'errorCount': errors,
@@ -208,14 +204,14 @@ class _EmailAssessmentScreenState extends State<EmailAssessmentScreen> {
       // Update assessment status to completed
       await _dbHelper.updateAssessmentStatus(
         widget.candidateId,
-        widget.assessmentType,
+        widget.emailData.type,
         AssessmentDatabaseHelper.STATUS_COMPLETED,
       );
 
       // Save assessment results
       await _dbHelper.saveAssessmentResult(
         widget.candidateId,
-        widget.assessmentType,
+        widget.emailData.type,
         results,
       );
     } catch (e) {

@@ -1,6 +1,5 @@
-// Next, let's create the Candidate model
-
 // lib/models/candidate.dart
+
 class Candidate {
   String? id; // Auto-generated candidate ID
   final String aadhar;
@@ -8,6 +7,7 @@ class Candidate {
   final String email;
   final String phone;
   final String dob;
+  final String gender; // Added gender field
 
   Candidate({
     this.id,
@@ -16,6 +16,7 @@ class Candidate {
     required this.email,
     required this.phone,
     required this.dob,
+    required this.gender, // Required gender
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +27,7 @@ class Candidate {
       'email': email,
       'phone': phone,
       'dob': dob,
+      'gender': gender, // Added gender
     };
   }
 
@@ -37,11 +39,12 @@ class Candidate {
       email: map['email'],
       phone: map['phone'],
       dob: map['dob'],
+      gender: map['gender'], // Added gender
     );
   }
 
   @override
   String toString() {
-    return 'Candidate{id: $id, name: $name, email: $email, phone: $phone, dob: $dob}';
+    return 'Candidate{id: $id, name: $name, email: $email, phone: $phone, dob: $dob, gender: $gender}';
   }
 }

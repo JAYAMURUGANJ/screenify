@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/local/db_helper.dart';
+import '../../domain/local/candidate_helper.dart';
 import '../../domain/model/candidate.dart';
 import 'login_screen.dart';
 
@@ -22,8 +22,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final CandidateDatabaseHelper _dbHelper = CandidateDatabaseHelper();
   DateTime? _selectedDate;
+  String? _selectedGender;
+
   bool _isLoading = false;
 
   Future<void> _selectDate(BuildContext context) async {
@@ -85,6 +87,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           email: _emailController.text,
           phone: _phoneController.text,
           dob: _dobController.text,
+          gender: _selectedGender!,
         );
 
         // Register the candidate and get the generated ID
@@ -192,6 +195,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         _phoneController.clear();
         _dobController.clear();
         _selectedDate = null;
+        _selectedGender = null;
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -482,6 +486,37 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                   }
                                   return null;
                                 },
+                              ),
+                              const SizedBox(height: 16),
+                              DropdownButtonFormField<String>(
+                                value: _selectedGender,
+                                decoration: InputDecoration(
+                                  labelText: 'Gender',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: const Icon(
+                                    Icons.person_pin_outlined,
+                                  ),
+                                ),
+
+                                items:
+                                    ['Male', 'Female', 'Transgender']
+                                        .map(
+                                          (gender) => DropdownMenuItem(
+                                            value: gender,
+                                            child: Text(gender),
+                                          ),
+                                        )
+                                        .toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedGender = value;
+                                  });
+                                },
+                                validator:
+                                    (value) =>
+                                        value == null || value.isEmpty
+                                            ? 'Please select gender'
+                                            : null,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(

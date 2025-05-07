@@ -1,18 +1,17 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:screenify/ui/screens/Typing_screen.dart';
-import 'package:screenify/ui/screens/email_screen.dart';
-import 'package:screenify/ui/screens/mcq_screen.dart';
 import 'package:screenify/ui/widgets/department_details.dart';
 import 'package:screenify/ui/widgets/global_timer.dart';
 import 'package:screenify/utils/extension.dart';
 
-import '../../domain/api/assessment_service.dart';
-import '../../domain/local/assessment_manager.dart';
-import '../../domain/model/assessment_data.dart';
+import '../../domain/local/assessment_helper.dart';
+import '../../domain/local/assessment_service.dart';
+import '../../domain/model/assessment_question.dart';
+import '../../utils/app_route.dart';
 import '../widgets/candidate_profile.dart';
-import 'form_screen.dart';
 
 class AssessmentsScreen extends StatefulWidget {
   final String candidateId;
@@ -102,6 +101,11 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
     }
   }
 
+  Future<String> getCandidateAssessmentResultsJson(String candidateId) async {
+    final resultsMap = await _dbHelper.getAllAssessmentResults(candidateId);
+    return jsonEncode(resultsMap);
+  }
+
   Future<void> _loadAllAssessments() async {
     setState(() {
       _isLoading = true;
@@ -184,71 +188,35 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
       AssessmentDatabaseHelper.STATUS_PENDING,
     );
 
-    // Update UI to show pending status
     setState(() {
-      // Update the status in our local assessment list
       for (var a in _assessments) {
         if (a.type == assessment.type) {
           a.status = AssessmentDatabaseHelper.STATUS_PENDING;
         }
       }
-      // Reapply current filter to update UI
       _filterAssessments(_selectedTabIndex);
     });
 
-    // Determine which type of assessment to open
+    // Use named routes for navigation
+    String? route;
+    Map<String, dynamic> arguments = {'candidateId': widget.candidateId};
+
     if (assessment.type.toLowerCase().contains('email')) {
-      // Navigate to email assessment screen using AppRouter
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => EmailAssessmentScreen(
-                assessmentType: assessment.type,
-                candidateId: widget.candidateId,
-                emailData: assessment,
-              ),
-        ),
-      );
+      route = AppRouter.emailAssessment;
+      arguments['emailData'] = assessment;
     } else if (assessment.type.toLowerCase().contains('mcq')) {
-      // Navigate to MCQ assessment screen using AppRouter
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => MCQAssessmentScreen(
-                mcqData: assessment,
-                candidateId: widget.candidateId,
-              ),
-        ),
-      );
+      route = AppRouter.mcqAssessment;
+      arguments['mcqData'] = assessment;
     } else if (assessment.type.toLowerCase().contains('typing')) {
-      // Navigate to typing assessment screen using AppRouter
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => TypingAssessmentScreen(
-                assessmentType: assessment.type,
-                candidateId: widget.candidateId,
-                typingData: assessment,
-              ),
-        ),
-      );
+      route = AppRouter.typingAssessment;
+      arguments['typingData'] = assessment;
+    } else if (assessment.type.toLowerCase().contains('form')) {
+      route = AppRouter.formFillingAssessment;
+      arguments['formFillingData'] = assessment;
     }
-    if (assessment.type.toLowerCase().contains('form')) {
-      // Navigate to form assessment screen using AppRouter
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => FormFillingScreen(
-                assessmentType: assessment.type,
-                candidateId: widget.candidateId,
-                formData: assessment,
-              ),
-        ),
-      );
+
+    if (route != null) {
+      await Navigator.pushNamed(context, route, arguments: arguments);
     }
 
     // Always reload the assessments list when returning from an assessment screen
@@ -401,6 +369,15 @@ class _AssessmentsScreenState extends State<AssessmentsScreen>
         ],
       ),
       actions: [
+        IconButton(
+          onPressed: () async {
+            var results = await getCandidateAssessmentResultsJson(
+              widget.candidateId,
+            );
+            debugPrint(results); // Print as JSON string
+          },
+          icon: Icon(Icons.call_made_rounded, color: Colors.blue[700]),
+        ),
         GlobalTimerWidget(),
         const SizedBox(width: 12),
         CandidateProfile(name: _candidateName, candidateId: widget.candidateId),

@@ -17,21 +17,3 @@ IconData getIconFromString(String iconName) {
       return Icons.assessment;
   }
 }
-
-// Function to map color string from JSON to Color
-Color getColorFromString(String colorName) {
-  switch (colorName) {
-    case 'purple':
-      return Colors.purple;
-    case 'orange':
-      return Colors.orange;
-    case 'green':
-      return Colors.green;
-    case 'blue':
-      return Colors.blue;
-    case 'teal':
-      return Colors.teal;
-    default:
-      return Colors.indigo;
-  }
-}

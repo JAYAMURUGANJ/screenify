@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:screenify/domain/local/assessment_manager.dart';
-import 'package:screenify/domain/model/assessment_data.dart';
+import 'package:screenify/domain/local/assessment_helper.dart';
+import 'package:screenify/domain/model/assessment_question.dart';
 import 'package:screenify/ui/widgets/global_timer.dart';
 import 'package:screenify/utils/extension.dart';
 import 'package:screenshot/screenshot.dart';
@@ -12,13 +12,11 @@ import 'package:screenshot/screenshot.dart';
 import '../widgets/candidate_profile.dart';
 
 class TypingAssessmentScreen extends StatefulWidget {
-  final String assessmentType;
   final String candidateId;
   final Assessment typingData;
 
   const TypingAssessmentScreen({
     super.key,
-    required this.assessmentType,
     required this.candidateId,
     required this.typingData,
   });
@@ -57,14 +55,14 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
     try {
       final status = await _dbHelper.getAssessmentStatus(
         widget.candidateId,
-        widget.assessmentType,
+        widget.typingData.type,
       );
 
       // If assessment is not started yet, update to pending
       if (status == AssessmentDatabaseHelper.STATUS_NOT_OPENED) {
         await _dbHelper.updateAssessmentStatus(
           widget.candidateId,
-          widget.assessmentType,
+          widget.typingData.type,
           AssessmentDatabaseHelper.STATUS_PENDING,
         );
       }
@@ -139,8 +137,6 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
 
     // Prepare result JSON
     final Map<String, dynamic> results = {
-      'candidateId': widget.candidateId,
-      'assessmentType': widget.assessmentType,
       'accuracy': accuracy,
       'timeInSeconds': timeInSeconds,
       'typingSpeed': typingSpeed,
@@ -173,14 +169,14 @@ class _TypingAssessmentScreenState extends State<TypingAssessmentScreen> {
       // Update assessment status to completed
       await _dbHelper.updateAssessmentStatus(
         widget.candidateId,
-        widget.assessmentType,
+        widget.typingData.type,
         AssessmentDatabaseHelper.STATUS_COMPLETED,
       );
 
       // Save assessment results
       await _dbHelper.saveAssessmentResult(
         widget.candidateId,
-        widget.assessmentType,
+        widget.typingData.type,
         results,
       );
     } catch (e) {

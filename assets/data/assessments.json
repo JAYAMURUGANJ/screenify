@@ -4,8 +4,8 @@
             "type": "MCQ",
             "title": "Multiple Choice Questions (MCQ)",
             "description": "Knowledge assessment through multiple choice questions on programming concepts and logic",
+            "instructions": "Select the correct answer for each question.",
             "icon": "quiz",
-            "color": "purple",
             "questions": [
                 {
                     "question": "What is the capital of France?",
@@ -27,7 +27,6 @@
                     ],
                     "correctAnswerIndex": 1
                 }
-              
             ],
             "status": "not_opened"
         },
@@ -35,9 +34,8 @@
             "type": "Email",
             "title": "Email Writing",
             "icon": "email",
-            "color": "orange",
             "description": "Assessment of professional email writing skills and etiquette",
-            "instruction": "You received a defective product (Model X200 Printer) from TechSupplies Inc. Write an email to their customer service explaining the issue and requesting a replacement or refund. Your order number is #45678.",
+            "instructions": "You received a defective product (Model X200 Printer) from TechSupplies Inc. Write an email to their customer service explaining the issue and requesting a replacement or refund. Your order number is #45678.",
             "expectedTo": "support@techsupplies.com",
             "expectedCc": "",
             "expectedSubject": "Defective Product - Order #45678",
@@ -64,7 +62,6 @@
             "title": "Typing Test",
             "description": "Assessment of typing speed and accuracy",
             "icon": "keyboard",
-            "color": "green",
             "instructions": "Type the following paragraph as quickly and accurately as possible.",
             "paragraph": "The quick brown fox jumps over the lazy dog. Touch typing is the ability to use muscle memory to find keys fast, without using the sense of sight, and with all the available fingers, just like piano players do. It significantly improves typing speed and eliminates errors. Touch typing simply makes you more productive and it is a skill worth learning.",
             "status": "not_opened"
@@ -74,16 +71,13 @@
             "title": "Income Tax Department Co-operative Society Membership Form",
             "description": "Assessment of form filling skills:",
             "icon": "edit_document",
-            "color": "blue",
-            "instructions": "Please fill the form carefully using the following official details for reference. The applicant’s name is RAJESH SHARMA, a Male employee, currently Married, and son of Mahesh Sharma. His date of birth is 15/06/1985. A photograph is mandatory for this application. He was appointed on 12/03/2010 and has served 12 years in the central government, including 10 years in the Income Tax Department. His expected date of retirement is 30/06/2045. He is presently posted at Income Tax Office, Anna Nagar, Chennai as a Tax Assistant. His employment status is Permanent, and his current basic pay is ₹45600. Ensure all dates follow the DD/MM/YYYY format, and the name should be entered in BLOCK LETTERS.",
-            "formFields": {
-              "employmentInfo": {
+            "instructions": "Please fill the form carefully using the following official details for reference. The applicant’s name is RAJESH SHARMA, a Male employee, currently Married, and son of Mahesh Sharma. His date of birth is 15/06/1985. He was appointed on 12/03/2010 and has served 12 years in the central government, including 10 years in the Income Tax Department. His expected date of retirement is 30/06/2045. He is presently posted at Income Tax Office, Anna Nagar, Chennai as a Tax Assistant. His employment status is Permanent, and his current basic pay is ₹45600.",
+            "employmentInfo": {
                 "name": "RAJESH SHARMA",
                 "gender": "Male",
                 "maritalStatus": "Yes",
                 "fatherName": "Mahesh Sharma",
                 "dateOfBirth": "15/06/1985",
-                "photoRequired": true,
                 "dateOfAppointment": "12/03/2010",
                 "govtServiceDetails": "12 years in central government",
                 "incomeTaxDeptDetails": "10 years in Income Tax Department",
@@ -92,36 +86,29 @@
                 "designation": "Tax Assistant",
                 "employmentStatus": "Permanent",
                 "basicPay": "45600"
-              }
             },
             "hints": [
-              "All fields marked with asterisk (*) are mandatory",
-              "Name should be entered in BLOCK LETTERS",
-              "Dates must be in DD/MM/YYYY format",
-              "Basic Pay should be a numeric value"
+                "All fields marked with asterisk (*) are mandatory",
+                "Name should be entered in BLOCK LETTERS",
+                "Dates must be in DD/MM/YYYY format",
+                "Basic Pay should be a numeric value"
             ],
-            "evaluationCriteria": {
-              "completeness": "All required fields must be filled",
-              "accuracy": "Information should match exactly as provided",
-              "formatAdherence": "Dates and currency formats must be correct",
-              "attention": "Details must be entered in appropriate fields"
-            },
             "expectedFields": [
-              "name",
-              "gender",
-              "maritalStatus",
-              "fatherHusbandName",
-              "dateOfBirth",
-              "dateOfAppointment",
-              "govtService",
-              "incomeTaxDept",
-              "dateOfRetirement",
-              "currentOffice",
-              "designation",
-              "employmentStatus",
-              "basicPay"
+                "name",
+                "gender",
+                "maritalStatus",
+                "fatherHusbandName",
+                "dateOfBirth",
+                "dateOfAppointment",
+                "govtService",
+                "incomeTaxDept",
+                "dateOfRetirement",
+                "currentOffice",
+                "designation",
+                "employmentStatus",
+                "basicPay"
             ],
             "status": "not_opened"
-          }
+        }
     ]
 }

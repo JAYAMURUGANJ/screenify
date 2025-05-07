@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-import '../../domain/local/db_helper.dart';
+import '../../domain/local/candidate_helper.dart';
 import '../../utils/app_route.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _candidateIdController = TextEditingController();
   final TextEditingController _dobController = TextEditingController();
 
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+  final CandidateDatabaseHelper _dbHelper = CandidateDatabaseHelper();
   DateTime? _selectedDate;
   bool _isLoading = false;
 
@@ -324,7 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   onPressed: () {
                                     Navigator.pushReplacementNamed(
                                       context,
-                                      '/Register',
+                                      '/register',
                                     );
                                   },
                                   child: Text(

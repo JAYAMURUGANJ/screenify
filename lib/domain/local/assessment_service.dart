@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
-import '../model/assessment_data.dart';
+import '../model/assessment_question.dart';
 
 class AssessmentService {
   static final AssessmentService _instance = AssessmentService._internal();
@@ -12,7 +12,7 @@ class AssessmentService {
 
   AssessmentService._internal();
 
-  AssessmentData? _assessmentData;
+  AssessmentQuestions? _assessmentData;
 
   /// Load JSON from assets and parse into AssessmentData model
   Future<void> loadAssessmentData() async {
@@ -21,45 +21,31 @@ class AssessmentService {
         'assets/data/assessments.json',
       );
       final Map<String, dynamic> jsonMap = json.decode(jsonString);
-      _assessmentData = AssessmentData.fromJson(jsonMap);
+      _assessmentData = AssessmentQuestions.fromJson(jsonMap);
     } catch (e) {
       debugPrint('Error loading assessment data: $e');
       // Create empty assessment data in case of error
-      _assessmentData = AssessmentData(assessments: []);
+      _assessmentData = AssessmentQuestions(assessments: []);
     }
   }
 
   /// Generic: Get assessments by type
   List<Assessment> getAssessmentsByType(String type) {
-    return _assessmentData?.assessments!
+    return _assessmentData?.assessments
             .where((assessment) => assessment.type == type)
             .toList() ??
         [];
   }
 
-  /// Get MCQ Assessments
-  List<Assessment> getMCQAssessments() => getAssessmentsByType("MCQ");
-
-  /// Get Email Assessments
-  List<Assessment> getEmailAssessments() => getAssessmentsByType("Email");
-
-  /// Get Typing Assessments
-  List<Assessment> getTypingAssessments() => getAssessmentsByType("Typing");
-
   /// Get all assessment types available
   List<String> getAvailableAssessmentTypes() {
-    return _assessmentData?.assessments!.map((a) => a.type).toSet().toList() ??
+    return _assessmentData?.assessments.map((a) => a.type).toSet().toList() ??
         [];
-  }
-
-  /// Get total assessment count
-  int getTotalAssessmentCount() {
-    return _assessmentData?.assessments!.length ?? 0;
   }
 
   /// Get count of assessments by status
   int getAssessmentCountByStatus(String status) {
-    return _assessmentData?.assessments!
+    return _assessmentData?.assessments
             .where((assessment) => assessment.status == status)
             .length ??
         0;

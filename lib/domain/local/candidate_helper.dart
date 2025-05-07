@@ -8,13 +8,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import '../model/candidate.dart';
 
-class DatabaseHelper {
-  static final DatabaseHelper _instance = DatabaseHelper._internal();
+class CandidateDatabaseHelper {
+  static final CandidateDatabaseHelper _instance =
+      CandidateDatabaseHelper._internal();
   static Database? _database;
 
-  factory DatabaseHelper() => _instance;
+  factory CandidateDatabaseHelper() => _instance;
 
-  DatabaseHelper._internal();
+  CandidateDatabaseHelper._internal();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -60,7 +61,8 @@ class DatabaseHelper {
         name TEXT,
         email TEXT,
         phone TEXT,
-        dob TEXT
+        dob TEXT,
+        gender TEXT
       )
     ''');
   }

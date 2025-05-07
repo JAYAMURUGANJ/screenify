@@ -7,24 +7,24 @@ import 'package:screenify/ui/widgets/candidate_profile.dart';
 import 'package:screenify/ui/widgets/global_timer.dart';
 import 'package:screenify/utils/extension.dart';
 
-import '../../domain/local/assessment_manager.dart';
-import '../../domain/model/assessment_data.dart';
+import '../../domain/local/assessment_helper.dart';
+import '../../domain/model/assessment_question.dart';
 
-class MCQAssessmentScreen extends StatefulWidget {
+class McqAssessmentScreen extends StatefulWidget {
   final Assessment mcqData;
   final String? candidateId;
 
-  const MCQAssessmentScreen({
+  const McqAssessmentScreen({
     super.key,
     required this.mcqData,
     required this.candidateId,
   });
 
   @override
-  State<MCQAssessmentScreen> createState() => _MCQAssessmentScreenState();
+  State<McqAssessmentScreen> createState() => _McqAssessmentScreenState();
 }
 
-class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
+class _McqAssessmentScreenState extends State<McqAssessmentScreen> {
   int _currentQuestionIndex = 0;
   final PageController _pageController = PageController(initialPage: 0);
   int _score = 0;
@@ -86,8 +86,6 @@ class _MCQAssessmentScreenState extends State<MCQAssessmentScreen> {
 
     // Create the final result object with completion timestamp
     Map<String, dynamic> result = {
-      'candidateId': widget.candidateId ?? '',
-      'assessmentType': widget.mcqData.type,
       'totalQuestions': _questions.length,
       'correctCount': correctCount,
       'wrongCount': wrongCount,

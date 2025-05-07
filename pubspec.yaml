@@ -54,6 +54,7 @@ dependencies:
   syncfusion_flutter_datagrid: ^29.1.40
   syncfusion_flutter_xlsio: ^29.1.40
   provider: ^6.1.5
+  equatable: ^2.0.7
 
 dev_dependencies:
   flutter_test:

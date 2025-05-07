@@ -26,7 +26,7 @@ class DepartmentDetails extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Logo
-            Image.asset('assets/images/logo.png', fit: BoxFit.contain),
+            Image.asset('assets/images/company_logo.png', fit: BoxFit.contain),
             const SizedBox(width: 24),
             // Organization details
             Column(

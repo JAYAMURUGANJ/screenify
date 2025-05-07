@@ -3,29 +3,29 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:screenshot/screenshot.dart';
 
-import '../../domain/local/assessment_manager.dart';
-import '../../domain/model/assessment_data.dart';
+import '../../domain/local/assessment_helper.dart';
+import '../../domain/model/assessment_question.dart';
 import '../../ui/widgets/candidate_profile.dart';
 import '../../ui/widgets/global_timer.dart';
 import '../../utils/extension.dart';
 
-class FormFillingScreen extends StatefulWidget {
-  final String assessmentType;
+class FormFillingAssessmentScreen extends StatefulWidget {
   final String candidateId;
-  final Assessment formData;
+  final Assessment formFillingData;
 
-  const FormFillingScreen({
+  const FormFillingAssessmentScreen({
     super.key,
-    required this.assessmentType,
     required this.candidateId,
-    required this.formData,
+    required this.formFillingData,
   });
 
   @override
-  _FormFillingScreenState createState() => _FormFillingScreenState();
+  _FormFillingAssessmentScreenState createState() =>
+      _FormFillingAssessmentScreenState();
 }
 
-class _FormFillingScreenState extends State<FormFillingScreen> {
+class _FormFillingAssessmentScreenState
+    extends State<FormFillingAssessmentScreen> {
   final _formKey = GlobalKey<FormState>();
   final ScreenshotController _screenshotController = ScreenshotController();
   final TextEditingController _nameController = TextEditingController();
@@ -72,14 +72,14 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
     try {
       final status = await _dbHelper.getAssessmentStatus(
         widget.candidateId,
-        widget.assessmentType,
+        widget.formFillingData.type,
       );
 
       // If assessment is not started yet, update to pending
       if (status == AssessmentDatabaseHelper.STATUS_NOT_OPENED) {
         await _dbHelper.updateAssessmentStatus(
           widget.candidateId,
-          widget.assessmentType,
+          widget.formFillingData.type,
           AssessmentDatabaseHelper.STATUS_PENDING,
         );
       }
@@ -132,7 +132,7 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
                 // Update status to completed
                 await _dbHelper.updateAssessmentStatus(
                   widget.candidateId,
-                  widget.assessmentType,
+                  widget.formFillingData.type,
                   AssessmentDatabaseHelper.STATUS_COMPLETED,
                 );
                 Navigator.pop(
@@ -210,8 +210,6 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
       double score = (correctCount / totalFields) * 100;
 
       Map<String, dynamic> assessmentResult = {
-        'candidateId': widget.candidateId,
-        'assessmentType': widget.assessmentType,
         'submissionDate': DateTime.now().toIso8601String(),
         'formDetails': {
           'name': _nameController.text,
@@ -240,7 +238,7 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
       // Save assessment result to DB
       await _dbHelper.saveAssessmentResult(
         widget.candidateId,
-        widget.assessmentType,
+        widget.formFillingData.type,
         assessmentResult,
       );
 
@@ -360,8 +358,7 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
           width: 300,
           color: blueColor[700],
           padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: ListView(
             children: [
               const SizedBox(height: 20),
               Container(
@@ -373,18 +370,20 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      getIconFromString(widget.formData.icon ?? 'description'),
+                      getIconFromString(
+                        widget.formFillingData.icon ?? 'description',
+                      ),
                       color: Colors.white,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        widget.formData.title,
+                        widget.formFillingData.title,
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 13,
                         ),
                       ),
                     ),
@@ -413,7 +412,7 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.formData.description,
+                      widget.formFillingData.description,
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -422,7 +421,7 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.formData.instructions ??
+                      widget.formFillingData.instructions ??
                           'Fill in all required fields marked with *',
                       style: const TextStyle(
                         fontSize: 14,
@@ -432,470 +431,531 @@ class _FormFillingScreenState extends State<FormFillingScreen> {
                   ],
                 ),
               ),
+              const Text(
+                'Hint',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 15),
+              SizedBox(
+                height: 200,
+                child: ListView.builder(
+                  itemBuilder: (_, index) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb,
+                            color: Colors.amber[700],
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              widget.formFillingData.hints[index],
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  itemCount: widget.formFillingData.hints.length,
+                ),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
         ),
 
         // Main form content area
         Expanded(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Form Header Card
-                    Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          children: [
-                            // Logo and Title
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.rectangle,
-                                  ),
-                                  child: Image.asset(
-                                    'assets/images/logo.png',
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'The Income Tax Department Co-operative Society Limited',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: blueColor[800],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      const Text(
-                                        '(REGD.No. MSCS/CR-11/90)',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        '121, MAHATHMA GANDHI SALAI, CHENNAI - 600 034.',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Application Title
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 12,
-                                horizontal: 24,
-                              ),
-                              decoration: BoxDecoration(
-                                color: blueColor[700],
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'Application for Admission as Regular Membership\n(Under Rule 19 of the M.S.C.S. Act, 2002)',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Form Header Card
+                  Card(
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          // Logo and Title
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
                                   color: Colors.white,
+                                  shape: BoxShape.rectangle,
                                 ),
-                                textAlign: TextAlign.center,
+                                child: Image.asset(
+                                  'assets/images/company_logo.png',
+                                  fit: BoxFit.contain,
+                                ),
                               ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'The Income Tax Department Co-operative Society Limited',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: blueColor[800],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '(REGD.No. MSCS/CR-11/90)',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      '121, MAHATHMA GANDHI SALAI, CHENNAI - 600 034.',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          // Application Title
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 24,
                             ),
-                          ],
-                        ),
+                            decoration: BoxDecoration(
+                              color: blueColor[700],
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'Application for Admission as Regular Membership\n(Under Rule 19 of the M.S.C.S. Act, 2002)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Form Fields Card
-                    Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(Icons.assignment, color: blueColor[700]),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Personal Information',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: blueColor[700],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(color: Colors.grey.shade400),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Column(
+                  ),
+                  const SizedBox(height: 10),
+                  // Form Fields Card
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height - 400,
+                    child: SingleChildScrollView(
+                      child: Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 children: [
-                                  // 1. NAME
-                                  _buildTableRow(
-                                    '1. NAME *\n(IN BLOCK LETTERS)',
-                                    TextFormField(
-                                      controller: _nameController,
-                                      textCapitalization:
-                                          TextCapitalization.characters,
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 10,
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
+                                  Icon(Icons.assignment, color: blueColor[700]),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Personal Information',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: blueColor[700],
                                     ),
-                                    hasBorder: true,
-                                  ),
-
-                                  // 2. Sex
-                                  _buildTableRow(
-                                    '2. Sex *',
-                                    DropdownButtonFormField<String>(
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 10,
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      value: _selectedGender,
-                                      items:
-                                          _genderOptions.map((String gender) {
-                                            return DropdownMenuItem<String>(
-                                              value: gender,
-                                              child: Text(gender),
-                                            );
-                                          }).toList(),
-                                      onChanged: (String? newValue) {
-                                        if (newValue != null) {
-                                          setState(() {
-                                            _selectedGender = newValue;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                    hasBorder: true,
-                                  ),
-
-                                  // 3. Marital Status
-                                  _buildTableRow(
-                                    '3. Marital Status *',
-                                    DropdownButtonFormField<String>(
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 10,
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                      value: _maritalStatus,
-                                      items:
-                                          _maritalOptions.map((String status) {
-                                            return DropdownMenuItem<String>(
-                                              value: status,
-                                              child: Text(status),
-                                            );
-                                          }).toList(),
-                                      onChanged: (String? newValue) {
-                                        if (newValue != null) {
-                                          setState(() {
-                                            _maritalStatus = newValue;
-                                          });
-                                        }
-                                      },
-                                    ),
-                                    hasBorder: true,
-                                  ),
-
-                                  // 4. Father's / Husband's Name
-                                  _buildTableRow(
-                                    "4. Father's / Husband's Name *",
-                                    TextFormField(
-                                      controller: _fatherHusbandNameController,
-                                      decoration: const InputDecoration(
-                                        isDense: true,
-                                        contentPadding: EdgeInsets.symmetric(
-                                          vertical: 12,
-                                          horizontal: 10,
-                                        ),
-                                        fillColor: Colors.white,
-                                        filled: true,
-                                      ),
-                                    ),
-                                    hasBorder: true,
-                                  ),
-
-                                  // 5. Date Details
-                                  _buildTableRow(
-                                    '5. (a) Date of Birth *\n\n    (b) Date of Appointment *\n\n    (c) Govt. Service *\n\n    (d) Income Tax Dept. *\n\n    (e) Date of Retirement *',
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Date of Birth
-                                        TextFormField(
-                                          controller: _dobController,
-
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Date of Appointment
-                                        TextFormField(
-                                          controller:
-                                              _appointmentDateController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-
-                                        const SizedBox(height: 12),
-
-                                        // Govt. Service
-                                        TextFormField(
-                                          controller: _govtServiceController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Income Tax Dept
-                                        TextFormField(
-                                          controller: _incomeTaxDeptController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Date of Retirement
-                                        TextFormField(
-                                          controller: _retirementDateController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    hasBorder: true,
-                                  ),
-
-                                  // 6. Office & Designation
-                                  _buildTableRow(
-                                    '6. (a) Office *\n\n    (b) Designation *\n\n    (c) Employment Status *\n\n    (d) Basic Pay *',
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        // Office
-                                        TextFormField(
-                                          controller: _officeController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Designation
-                                        TextFormField(
-                                          controller: _designationController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Employment Status
-                                        DropdownButtonFormField<String>(
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                          ),
-                                          value: _employmentStatus,
-                                          items:
-                                              _employmentOptions.map((
-                                                String status,
-                                              ) {
-                                                return DropdownMenuItem<String>(
-                                                  value: status,
-                                                  child: Text(status),
-                                                );
-                                              }).toList(),
-                                          onChanged: (String? newValue) {
-                                            if (newValue != null) {
-                                              setState(() {
-                                                _employmentStatus = newValue;
-                                              });
-                                            }
-                                          },
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // Basic Pay
-                                        TextFormField(
-                                          controller: _basicPayController,
-                                          decoration: const InputDecoration(
-                                            isDense: true,
-                                            contentPadding:
-                                                EdgeInsets.symmetric(
-                                                  vertical: 12,
-                                                  horizontal: 10,
-                                                ),
-                                            fillColor: Colors.white,
-                                            filled: true,
-                                            prefixText: '₹ ',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    hasBorder: true,
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+                              const SizedBox(height: 16),
+                              Container(
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.grey.shade400,
+                                  ),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Column(
+                                  children: [
+                                    // 1. NAME
+                                    _buildTableRow(
+                                      '1. NAME *\n(IN BLOCK LETTERS)',
+                                      TextFormField(
+                                        controller: _nameController,
+                                        textCapitalization:
+                                            TextCapitalization.characters,
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 10,
+                                          ),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                        ),
+                                      ),
+                                      hasBorder: true,
+                                    ),
 
-                    SizedBox(height: 16),
+                                    // 2. Sex
+                                    _buildTableRow(
+                                      '2. Sex *',
+                                      DropdownButtonFormField<String>(
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 10,
+                                          ),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                        ),
+                                        value: _selectedGender,
+                                        items:
+                                            _genderOptions.map((String gender) {
+                                              return DropdownMenuItem<String>(
+                                                value: gender,
+                                                child: Text(gender),
+                                              );
+                                            }).toList(),
+                                        onChanged: (String? newValue) {
+                                          if (newValue != null) {
+                                            setState(() {
+                                              _selectedGender = newValue;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                      hasBorder: true,
+                                    ),
 
-                    // Submit Button
-                    Center(
-                      child: SizedBox(
-                        width: 300,
-                        height: 50,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: blueColor[700],
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            elevation: 3,
-                          ),
-                          onPressed:
-                              () => _evaluateForm(
-                                widget.formData.formFields!.employmentInfo!,
+                                    // 3. Marital Status
+                                    _buildTableRow(
+                                      '3. Marital Status *',
+                                      DropdownButtonFormField<String>(
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 10,
+                                          ),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                        ),
+                                        value: _maritalStatus,
+                                        items:
+                                            _maritalOptions.map((
+                                              String status,
+                                            ) {
+                                              return DropdownMenuItem<String>(
+                                                value: status,
+                                                child: Text(status),
+                                              );
+                                            }).toList(),
+                                        onChanged: (String? newValue) {
+                                          if (newValue != null) {
+                                            setState(() {
+                                              _maritalStatus = newValue;
+                                            });
+                                          }
+                                        },
+                                      ),
+                                      hasBorder: true,
+                                    ),
+
+                                    // 4. Father's / Husband's Name
+                                    _buildTableRow(
+                                      "4. Father's / Husband's Name *",
+                                      TextFormField(
+                                        controller:
+                                            _fatherHusbandNameController,
+                                        decoration: const InputDecoration(
+                                          isDense: true,
+                                          contentPadding: EdgeInsets.symmetric(
+                                            vertical: 12,
+                                            horizontal: 10,
+                                          ),
+                                          fillColor: Colors.white,
+                                          filled: true,
+                                        ),
+                                      ),
+                                      hasBorder: true,
+                                    ),
+
+                                    // 5. Date Details
+                                    _buildTableRow(
+                                      '5. (a) Date of Birth *\n\n    (b) Date of Appointment *\n\n    (c) Govt. Service *\n\n    (d) Income Tax Dept. *\n\n    (e) Date of Retirement *',
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Date of Birth
+                                          TextFormField(
+                                            controller: _dobController,
+
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Date of Appointment
+                                          TextFormField(
+                                            controller:
+                                                _appointmentDateController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+
+                                          const SizedBox(height: 12),
+
+                                          // Govt. Service
+                                          TextFormField(
+                                            controller: _govtServiceController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Income Tax Dept
+                                          TextFormField(
+                                            controller:
+                                                _incomeTaxDeptController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Date of Retirement
+                                          TextFormField(
+                                            controller:
+                                                _retirementDateController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      hasBorder: true,
+                                    ),
+
+                                    // 6. Office & Designation
+                                    _buildTableRow(
+                                      '6. (a) Office *\n\n    (b) Designation *\n\n    (c) Employment Status *\n\n    (d) Basic Pay *',
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Office
+                                          TextFormField(
+                                            controller: _officeController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Designation
+                                          TextFormField(
+                                            controller: _designationController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Employment Status
+                                          DropdownButtonFormField<String>(
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                            ),
+                                            value: _employmentStatus,
+                                            items:
+                                                _employmentOptions.map((
+                                                  String status,
+                                                ) {
+                                                  return DropdownMenuItem<
+                                                    String
+                                                  >(
+                                                    value: status,
+                                                    child: Text(status),
+                                                  );
+                                                }).toList(),
+                                            onChanged: (String? newValue) {
+                                              if (newValue != null) {
+                                                setState(() {
+                                                  _employmentStatus = newValue;
+                                                });
+                                              }
+                                            },
+                                          ),
+                                          const SizedBox(height: 12),
+
+                                          // Basic Pay
+                                          TextFormField(
+                                            controller: _basicPayController,
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              contentPadding:
+                                                  EdgeInsets.symmetric(
+                                                    vertical: 12,
+                                                    horizontal: 10,
+                                                  ),
+                                              fillColor: Colors.white,
+                                              filled: true,
+                                              prefixText: '₹ ',
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      hasBorder: true,
+                                    ),
+                                  ],
+                                ),
                               ),
-                          icon: const Icon(Icons.check_circle),
-                          label: const Text(
-                            'SUBMIT ',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  SizedBox(height: 10),
+
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          () => _evaluateForm(
+                            widget.formFillingData.employmentInfo!,
+                          ),
+                      icon: const Icon(Icons.check_circle),
+                      label: const Text(
+                        'SUBMIT ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: blueColor[700],
+                        foregroundColor: Colors.white,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Footer
+                  Text(
+                    '© ${DateTime.now().year} Screenify. All rights reserved.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                  ),
+                ],
               ),
             ),
           ),
