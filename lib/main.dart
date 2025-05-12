@@ -5,16 +5,14 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
-import 'services/window_service.dart';
+import 'core/utils/window_service.dart';
 
 void main() async {
   // Avoid listening to signals on Windows
   if (!Platform.isWindows) {
     ProcessSignal.sigterm.watch().listen((_) {
-      debugPrint('Received SIGTERM. Shutting down gracefully...');
       // Perform cleanup or shutdown logic here
     });
-
     // Register a callback for when the app is shutting down
     ProcessSignal.sigterm.watch().listen((_) {
       // Show taskbar before application terminates
@@ -22,6 +20,8 @@ void main() async {
       exit(0);
     });
   }
+
+  //Bloc.observer = SimpleBlocObserver();
 
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();

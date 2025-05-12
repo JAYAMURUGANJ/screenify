@@ -202,14 +202,18 @@ class _ExcelAssessmentState extends State<ExcelAssessment> {
     int quarterlyValueScore = 0;
     for (int i = 0; i < _referenceData.length; i++) {
       if (i < userEnteredData.length) {
-        if (userEnteredData[i].q1 == _referenceData[i].q1)
+        if (userEnteredData[i].q1 == _referenceData[i].q1) {
           quarterlyValueScore += 2;
-        if (userEnteredData[i].q2 == _referenceData[i].q2)
+        }
+        if (userEnteredData[i].q2 == _referenceData[i].q2) {
           quarterlyValueScore += 2;
-        if (userEnteredData[i].q3 == _referenceData[i].q3)
+        }
+        if (userEnteredData[i].q3 == _referenceData[i].q3) {
           quarterlyValueScore += 2;
-        if (userEnteredData[i].q4 == _referenceData[i].q4)
+        }
+        if (userEnteredData[i].q4 == _referenceData[i].q4) {
           quarterlyValueScore += 2;
+        }
       }
     }
     score += quarterlyValueScore;
@@ -591,7 +595,7 @@ class _ExcelAssessmentState extends State<ExcelAssessment> {
         }
       }
     } catch (e) {
-      print('Formula evaluation error: $e');
+      debugPrint('Formula evaluation error: $e');
     }
 
     return ''; // Return empty string if formula can't be evaluated
