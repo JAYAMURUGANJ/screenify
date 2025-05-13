@@ -5,9 +5,9 @@ import '../../presentation/auth/pages/login_screen.dart';
 import '../../presentation/auth/pages/registration_screen.dart';
 import '../../presentation/dashboard/pages/dashboard_screen.dart';
 import '../../presentation/email/pages/email_screen.dart';
+import '../../presentation/form/pages/form_screen.dart';
 import '../../presentation/mcq/pages/mcq_screen.dart';
 import '../../presentation/typing/pages/Typing_screen.dart';
-import '../../presentation/form/pages/form_screen.dart';
 import '../widgets/app_splash.dart';
 
 class AppRouter {
@@ -272,6 +272,9 @@ class AppRouter {
     required String title,
     required String message,
     String? buttonText,
+    String? secondaryButtonText,
+    VoidCallback? primaryCallback,
+    VoidCallback? secondaryCallback,
   }) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final context = navigatorKey.currentContext;
@@ -284,8 +287,23 @@ class AppRouter {
               title: Text(title),
               content: Text(message),
               actions: [
+                if (secondaryButtonText != null)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      if (secondaryCallback != null) {
+                        secondaryCallback();
+                      }
+                    },
+                    child: Text(secondaryButtonText),
+                  ),
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    if (primaryCallback != null) {
+                      primaryCallback();
+                    }
+                  },
                   child: Text(buttonText ?? 'OK'),
                 ),
               ],

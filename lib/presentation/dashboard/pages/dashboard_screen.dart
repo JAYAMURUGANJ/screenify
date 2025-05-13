@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import '/core/widgets/department_details.dart';
 import '/core/widgets/global_timer.dart';
 import '/domain/entities/questions_entity.dart';
 import '../../../core/local/assessment_database_helper.dart';
+import '../../../core/widgets/completion_dialog.dart';
 import '../bloc/assessment_bloc.dart';
 import '../bloc/assessment_event.dart';
 import '../bloc/assessment_state.dart';
@@ -31,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
 
   int _selectedTabIndex = 0;
+  bool _checkedCompletionStatus = false;
 
   @override
   void initState() {
@@ -71,6 +74,37 @@ class _DashboardScreenState extends State<DashboardScreen>
         assessments: widget.assessmentDetails.assessments,
       ),
     );
+  }
+
+  void _checkAllAssessmentsCompleted(List<AssessmentEntity> assessments) {
+    if (_checkedCompletionStatus) return;
+
+    // Filter assessments by candidateId
+
+    // Check if all assessments for the candidate are completed
+    bool allCompleted = assessments.every(
+      (assessment) =>
+          assessment.status == AssessmentDatabaseHelper.STATUS_COMPLETED,
+    );
+
+    // Check if there are exactly 4 unique assessment types for this candidate
+    int assessmentTypeCount = assessments.length;
+
+    if (allCompleted && assessmentTypeCount == 4) {
+      _checkedCompletionStatus = true;
+      // Show completion dialog
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return CompletionDialog(
+              candidateId: widget.assessmentDetails.candidateId,
+            );
+          },
+        );
+      });
+    }
   }
 
   Future<void> _navigateToAssessment(AssessmentEntity assessment) async {
@@ -134,6 +168,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               body: _buildLoadingView(),
             );
           } else if (state is AssessmentsLoaded) {
+            // Check if all assessments are completed
+            _checkAllAssessmentsCompleted(state.assessments);
+
             return Scaffold(
               backgroundColor: Colors.grey[50],
               appBar: _buildAppBar(),
@@ -324,66 +361,11 @@ class _DashboardScreenState extends State<DashboardScreen>
         ],
       ),
       actions: [
-        IconButton(
-          onPressed: () async {
-            var results = await getCandidateAssessmentResultsJson(
-              widget.assessmentDetails.candidateId,
-            );
-            debugPrint(results); // Print as JSON string
-          },
-          icon: Icon(Icons.call_made_rounded, color: Colors.blue[700]),
-        ),
         GlobalTimerWidget(),
         const SizedBox(width: 12),
         CandidateProfile(
           name: widget.assessmentDetails.candidateName,
           candidateId: widget.assessmentDetails.candidateId,
-        ),
-        IconButton(
-          icon: const Icon(Icons.restart_alt),
-          tooltip: 'Reset Database (Debug)',
-          onPressed: () async {
-            // Show confirmation dialog
-            final shouldReset = await showDialog<bool>(
-              context: context,
-              builder:
-                  (context) => AlertDialog(
-                    title: const Text('Reset Database?'),
-                    content: const Text(
-                      'This will delete all assessment status data. '
-                      'This action cannot be undone. Continue?',
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('CANCEL'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        style: TextButton.styleFrom(
-                          foregroundColor: Colors.red,
-                        ),
-                        child: const Text('RESET'),
-                      ),
-                    ],
-                  ),
-            );
-
-            if (shouldReset == true) {
-              // Use BLoC to reset database
-              context.read<AssessmentBloc>().add(ResetDatabaseEvent());
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Database reset successfully'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-
-              // Refresh assessments after reset
-              _refreshAssessmentStatuses();
-            }
-          },
         ),
       ],
     );

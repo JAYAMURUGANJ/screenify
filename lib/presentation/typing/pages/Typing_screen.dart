@@ -7,6 +7,7 @@ import 'package:screenify/core/widgets/global_timer.dart';
 import 'package:screenify/domain/entities/questions_entity.dart';
 import 'package:screenshot/screenshot.dart';
 
+import '../../../core/route/app_route.dart';
 import '../../../core/widgets/candidate_profile.dart';
 import '../../dashboard/bloc/assessment_bloc.dart';
 import '../bloc/typing_assessment_bloc.dart';
@@ -275,7 +276,7 @@ class TypingAssessmentScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          state.sampleText,
+                          state.paragraph,
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[700],
@@ -420,99 +421,41 @@ class TypingAssessmentScreen extends StatelessWidget {
     BuildContext context,
     Map<String, dynamic> results,
   ) {
-    // Store the bloc reference from the current context before showing the dialog
+    // Store the bloc reference from the current context
     final bloc = BlocProvider.of<TypingAssessmentBloc>(context);
-    final MaterialColor blueColor = Colors.blue;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(
-              'Submit Assessment?',
-              style: TextStyle(
-                color: blueColor[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              'Are you sure you want to submit this assessment? You cannot make changes after submission.',
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext), // Close dialog
-                child: Text(
-                  'CANCEL',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Close dialog
-                  bloc.submitAssessment(results);
-                },
-                child: Text(
-                  'SUBMIT',
-                  style: TextStyle(
-                    color: blueColor[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    AppRouter.showGlobalDialog(
+      title: 'Submit Assessment?',
+      message:
+          'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+      buttonText: 'SUBMIT',
+      secondaryButtonText: 'CANCEL',
+      primaryCallback: () {
+        // This will run when the user clicks SUBMIT
+        bloc.submitAssessment(results);
+      },
+      secondaryCallback: () {
+        // This will run when the user clicks CANCEL
+        // No action needed for cancel
+      },
     );
   }
 
   void _showExitConfirmation(BuildContext context) {
-    final MaterialColor blueColor = Colors.blue;
-
-    showDialog(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(
-              'Exit Assessment?',
-              style: TextStyle(
-                color: blueColor[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: const Text(
-              'You can continue this assessment later. '
-              'Are you sure you want to exit?',
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext), // Close dialog
-                child: Text(
-                  'CANCEL',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Close dialog
-                  Navigator.pop(context, true); // Return to assessment list
-                },
-                child: Text(
-                  'EXIT',
-                  style: TextStyle(
-                    color: blueColor[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    AppRouter.showGlobalDialog(
+      title: 'Exit Assessment?',
+      message:
+          'You can continue this assessment later. Are you sure you want to exit?',
+      buttonText: 'EXIT',
+      secondaryButtonText: 'CANCEL',
+      primaryCallback: () {
+        // This will run when the user clicks EXIT
+        Navigator.pop(context, true); // Return to assessment list
+      },
+      secondaryCallback: () {
+        // This will run when the user clicks CANCEL
+        // No additional action needed as the dialog is already closed
+      },
     );
   }
 }

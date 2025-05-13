@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:screenify/core/exception/server_exception.dart';
 import 'package:screenify/core/network/dio_client.dart';
 import 'package:screenify/data/models/questions_model.dart';
@@ -39,6 +40,7 @@ class CandidateRepositoryImpl implements AuthRepository {
     );
 
     final response = await _dio.post('login.php', data: model.toJson());
+    debugPrint('Response: ${response.data}');
 
     if (response.data['status'] != 'success') {
       throw ServerException('Login failed: ${response.data}');

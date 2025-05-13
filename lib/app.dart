@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
+import 'package:screenify/core/widgets/completion_dialog.dart';
 
+import 'core/local/shared_pref.dart';
 import 'core/route/app_route.dart';
 import 'core/utils/timer_provider.dart';
 import 'data/repositories/assessment_local_repository_impl.dart';
@@ -11,6 +13,22 @@ import 'domain/usecases/candidate_login_usecase.dart';
 import 'domain/usecases/candidate_register_usecase.dart';
 import 'presentation/auth/bloc/auth_bloc.dart';
 import 'presentation/dashboard/bloc/assessment_bloc.dart';
+
+// Global function to show completion dialog using AppRouter
+void showCompletionDialog(String candidateId) {
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    final context = AppRouter.navigatorKey.currentContext;
+    if (context != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return CompletionDialog(candidateId: candidateId);
+        },
+      );
+    }
+  });
+}
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -61,15 +79,14 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create:
               (_) => TimerProvider(
-                durationInMinutes: 60,
+                durationInMinutes: 15,
                 autoStart: true,
-                onTimerComplete: () {
-                  AppRouter.showGlobalDialog(
-                    title: 'Time is Up!',
-                    message:
-                        'Your assessment session has ended. Please submit your work.',
-                    buttonText: 'OK',
-                  );
+                onTimerComplete: () async {
+                  final sharedPref = await SharedPref.getInstance();
+                  final candidateId =
+                      sharedPref.getString('candidate_id') ?? '';
+                  // Use the global function to show dialog
+                  showCompletionDialog(candidateId);
                 },
               ),
         ),
@@ -78,7 +95,8 @@ class MyApp extends StatelessWidget {
         title: 'Screenify',
         debugShowCheckedModeBanner: false,
         themeMode: ThemeMode.system,
-        navigatorKey: AppRouter.navigatorKey,
+        navigatorKey:
+            AppRouter.navigatorKey, // Use the existing AppRouter navigatorKey
         initialRoute: AppRouter.splash,
         routes: AppRouter.routes,
       ),

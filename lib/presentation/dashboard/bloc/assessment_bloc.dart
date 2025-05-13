@@ -340,6 +340,34 @@ class AssessmentBloc extends Bloc<AssessmentEvent, AssessmentState> {
     }
   }
 
+  Map<String, bool> checkAllAssessmentsCompleted(
+    List<AssessmentEntity> assessments,
+  ) {
+    // Group by assessment_type
+    final Map<String, List<AssessmentEntity>> grouped = {};
+    for (final assessment in assessments) {
+      grouped.putIfAbsent(assessment.type, () => []).add(assessment);
+    }
+
+    // Check completion for each type
+    final Map<String, bool> result = {};
+    grouped.forEach((type, list) {
+      final total = list.length;
+      final completed =
+          list
+              .where(
+                (a) => a.status == AssessmentDatabaseHelper.STATUS_COMPLETED,
+              )
+              .length;
+      result[type] = (completed == total && total > 0);
+      debugPrint(
+        'Type: $type, Completed: $completed/$total, All Completed: ${result[type]}',
+      );
+    });
+
+    return result;
+  }
+
   @override
   Future<void> close() {
     _statusSubscription?.cancel();

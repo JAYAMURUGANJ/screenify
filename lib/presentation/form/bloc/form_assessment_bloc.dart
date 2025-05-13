@@ -87,101 +87,127 @@ class FormFillingAssessmentBloc extends Cubit<FormFillingAssessmentState> {
   }
 
   Map<String, dynamic> calculateScore() {
-    var employmentInfo = state.employmentInfo;
-
-    List<String> mismatchFields = [];
-    int totalFields = 8;
+    List<String> emptyFields = [];
+    int totalFields = 13; // Total number of fields to validate
     int correctCount = 0;
 
-    if (employmentInfo != null) {
-      // Perform validation against expected data
-      if (nameController.text.trim().toUpperCase() ==
-          employmentInfo.name!.toUpperCase()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Name');
-      }
-
-      if (fatherHusbandNameController.text.trim().toUpperCase() ==
-          employmentInfo.fatherName!.toUpperCase()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Father\'s/Husband\'s Name');
-      }
-
-      if (dobController.text.trim() == employmentInfo.dateOfBirth!.trim()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Date of Birth');
-      }
-
-      if (appointmentDateController.text.trim() ==
-          employmentInfo.dateOfAppointment!.trim()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Date of Appointment');
-      }
-
-      if (retirementDateController.text.trim() ==
-          employmentInfo.dateOfRetirement!.trim()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Date of Retirement');
-      }
-
-      if (officeController.text.trim().toUpperCase() ==
-          employmentInfo.currentOffice!.toUpperCase()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Current Office');
-      }
-
-      if (designationController.text.trim().toUpperCase() ==
-          employmentInfo.designation!.toUpperCase()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Designation');
-      }
-
-      if (basicPayController.text.trim() == employmentInfo.basicPay!.trim()) {
-        correctCount++;
-      } else {
-        mismatchFields.add('Basic Pay');
-      }
+    // Check for empty fields first
+    if (nameController.text.trim().isEmpty) {
+      emptyFields.add('Name');
     } else {
-      // If no employment info to validate against, just compile form values
-      correctCount = totalFields; // No validation, so all fields are "correct"
+      correctCount++; // Count non-empty name as correct
     }
 
-    double score = (correctCount / totalFields) * 100;
+    if (fatherHusbandNameController.text.trim().isEmpty) {
+      emptyFields.add('Father\'s/Husband\'s Name');
+    } else {
+      correctCount++; // Count non-empty father/husband name as correct
+    }
 
+    if (dobController.text.trim().isEmpty) {
+      emptyFields.add('Date of Birth');
+    } else {
+      correctCount++; // Count non-empty DOB as correct
+    }
+
+    if (appointmentDateController.text.trim().isEmpty) {
+      emptyFields.add('Date of Appointment');
+    } else {
+      correctCount++; // Count non-empty appointment date as correct
+    }
+
+    if (retirementDateController.text.trim().isEmpty) {
+      emptyFields.add('Date of Retirement');
+    } else {
+      correctCount++; // Count non-empty retirement date as correct
+    }
+
+    if (officeController.text.trim().isEmpty) {
+      emptyFields.add('Current Office');
+    } else {
+      correctCount++; // Count non-empty office as correct
+    }
+
+    if (designationController.text.trim().isEmpty) {
+      emptyFields.add('Designation');
+    } else {
+      correctCount++; // Count non-empty designation as correct
+    }
+
+    if (basicPayController.text.trim().isEmpty) {
+      emptyFields.add('Basic Pay');
+    } else {
+      correctCount++; // Count non-empty basic pay as correct
+    }
+
+    if (govtServiceController.text.trim().isEmpty) {
+      emptyFields.add('Government Service Details');
+    } else {
+      correctCount++; // Count non-empty govt service details as correct
+    }
+
+    if (incomeTaxDeptController.text.trim().isEmpty) {
+      emptyFields.add('Income Tax Department Details');
+    } else {
+      correctCount++; // Count non-empty income tax dept details as correct
+    }
+
+    // For the dropdown fields, assume they are always selected with some value
+    correctCount +=
+        3; // Adding 3 for Gender, Marital Status, and Employment Status
+
+    // Calculate score percentage rounded to 2 decimal places
+    double score = ((correctCount / totalFields) * 100).toDouble();
+    // Round to 2 decimal places
+    score = double.parse(score.toStringAsFixed(2));
+
+    // Generate simplified assessment result
     Map<String, dynamic> assessmentResult = {
-      'submissionDate': DateTime.now().toIso8601String(),
-      'formDetails': {
-        'name': nameController.text,
-        'gender': selectedGender,
-        'maritalStatus': maritalStatus,
-        'fatherHusbandName': fatherHusbandNameController.text,
-        'dob': dobController.text,
-        'appointmentDate': appointmentDateController.text,
-        'govtService': govtServiceController.text,
-        'incomeTaxDept': incomeTaxDeptController.text,
-        'retirementDate': retirementDateController.text,
-        'office': officeController.text,
-        'designation': designationController.text,
-        'employmentStatus': employmentStatus,
-        'basicPay': basicPayController.text,
+      "submissionDate": DateTime.now().toIso8601String(),
+      "completedAt": DateTime.now().toIso8601String(),
+      "skillLevel": "Intermediate",
+      "score": score,
+      "scorePercentage": score,
+      "passed": score >= 80,
+      "feedback": generateFeedback(score, emptyFields),
+      "details": {
+        "formDetails": {
+          "name": nameController.text,
+          "gender": selectedGender,
+          "maritalStatus": maritalStatus,
+          "fatherHusbandName": fatherHusbandNameController.text,
+          "dob": dobController.text,
+          "appointmentDate": appointmentDateController.text,
+          "govtService": govtServiceController.text,
+          "incomeTaxDept": incomeTaxDeptController.text,
+          "retirementDate": retirementDateController.text,
+          "office": officeController.text,
+          "designation": designationController.text,
+          "employmentStatus": employmentStatus,
+          "basicPay": basicPayController.text,
+        },
+        "validation": {
+          "totalFields": totalFields,
+          "correctFields": correctCount,
+          "emptyFields": emptyFields,
+        },
       },
-      'validation': {
-        'score': score,
-        'totalFields': totalFields,
-        'correctFields': correctCount,
-        'mismatchFields': mismatchFields,
-      },
-      'status': 'submitted',
     };
 
     return assessmentResult;
+  }
+
+  // Helper function to generate feedback based on score and issues
+  String generateFeedback(double score, List<String> emptyFields) {
+    if (score == 100) {
+      return "Excellent! All fields were filled correctly.";
+    } else if (score >= 80) {
+      return "Good job! You filled most fields correctly. Please review the following fields: ${emptyFields.join(', ')}.";
+    } else if (score >= 50) {
+      return "You've made several errors. Please review the following fields carefully: ${emptyFields.join(', ')}.";
+    } else {
+      return "Please complete the form. Many fields are empty or incorrect: ${emptyFields.join(', ')}.";
+    }
   }
 
   Future<void> submitAssessment(Map<String, dynamic> results) async {

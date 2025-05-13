@@ -7,6 +7,7 @@ import 'package:screenify/core/widgets/candidate_profile.dart';
 import 'package:screenify/core/widgets/global_timer.dart';
 import 'package:screenify/domain/entities/questions_entity.dart';
 
+import '../../../core/route/app_route.dart';
 import '../../dashboard/bloc/assessment_bloc.dart';
 import '../bloc/mcq_assessment_bloc.dart';
 import '../bloc/mcq_assessment_state.dart';
@@ -594,54 +595,23 @@ class McqAssessmentScreen extends StatelessWidget {
   }
 
   void _showSubmissionConfirmation(BuildContext context) {
-    // Store the bloc reference from the current context before showing the dialog
+    // Store the bloc reference from the current context
     final bloc = BlocProvider.of<McqAssessmentBloc>(context);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: Text(
-              'Submit Assessment?',
-              style: TextStyle(
-                color: Colors.blue[700],
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            content: Text(
-              'Are you sure you want to submit this assessment? You cannot make changes after submission.',
-              style: TextStyle(color: Colors.grey[700]),
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Close dialog
-                },
-                child: Text(
-                  'CANCEL',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(dialogContext); // Close dialog
-                  // Use the previously stored bloc instead of trying to access it from dialog context
-                  bloc.submitAssessment();
-                },
-                child: Text(
-                  'SUBMIT',
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    AppRouter.showGlobalDialog(
+      title: 'Submit Assessment?',
+      message:
+          'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+      buttonText: 'SUBMIT',
+      secondaryButtonText: 'CANCEL',
+      primaryCallback: () {
+        // This will run when the user clicks SUBMIT
+        bloc.submitAssessment();
+      },
+      secondaryCallback: () {
+        // This will run when the user clicks CANCEL
+        // No action needed for cancel
+      },
     );
   }
 }

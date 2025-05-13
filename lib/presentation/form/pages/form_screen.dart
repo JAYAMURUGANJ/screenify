@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:screenify/domain/entities/questions_entity.dart';
 import 'package:screenshot/screenshot.dart';
 
+import '../../../core/route/app_route.dart';
 import '../../../core/utils/extension.dart';
 import '../../../core/widgets/candidate_profile.dart';
 import '../../../core/widgets/global_timer.dart';
@@ -170,7 +171,7 @@ class _FormFillingAssessmentScreenState
         IconButton(
           icon: Icon(Icons.close, color: Colors.grey[700]),
           onPressed: () {
-            showExitConfirmation(context);
+            _showExitConfirmation(context);
           },
         ),
       ],
@@ -762,7 +763,9 @@ class _FormFillingAssessmentScreenState
                                 height: 50,
                                 child: ElevatedButton.icon(
                                   onPressed:
-                                      _isSubmitting ? resetTest : handleSubmit,
+                                      _isSubmitting
+                                          ? resetTest
+                                          : () => handleSubmit(context),
                                   icon:
                                       _isSubmitting
                                           ? const Icon(Icons.refresh)
@@ -856,57 +859,57 @@ class _FormFillingAssessmentScreenState
     );
   }
 
-  void showExitConfirmation(BuildContext context) {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Exit Assessment'),
-            content: const Text(
-              'Are you sure you want to exit this assessment? Your progress will not be saved.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('CANCEL'),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context, false); // Close assessment screen
-                },
-                style: TextButton.styleFrom(foregroundColor: Colors.red),
-                child: const Text('EXIT'),
-              ),
-            ],
-          ),
-    );
-  }
-
-  void handleSubmit() {
+  void handleSubmit(BuildContext context) {
     final bloc = BlocProvider.of<FormFillingAssessmentBloc>(context);
-
-    // Validate form
-    if (bloc.nameController.text.isEmpty ||
-        bloc.fatherHusbandNameController.text.isEmpty ||
-        bloc.dobController.text.isEmpty ||
-        bloc.appointmentDateController.text.isEmpty ||
-        bloc.retirementDateController.text.isEmpty ||
-        bloc.officeController.text.isEmpty ||
-        bloc.designationController.text.isEmpty ||
-        bloc.basicPayController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please fill all required fields marked with *'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     // Calculate score and submit assessment
     final results = bloc.calculateScore();
-    bloc.submitAssessment(results);
+
+    // Print results to terminal as a single string (for debugging)
+    debugPrint("FormFillingResponse: -> $results");
+    _showSubmissionConfirmation(context, results);
+  }
+
+  void _showSubmissionConfirmation(
+    BuildContext context,
+    Map<String, dynamic> results,
+  ) {
+    // Store the bloc reference from the current context
+    final bloc = BlocProvider.of<FormFillingAssessmentBloc>(context);
+
+    AppRouter.showGlobalDialog(
+      title: 'Submit Assessment?',
+      message:
+          'Are you sure you want to submit this assessment? You cannot make changes after submission.',
+      buttonText: 'SUBMIT',
+      secondaryButtonText: 'CANCEL',
+      primaryCallback: () {
+        // This will run when the user clicks SUBMIT
+        bloc.submitAssessment(results);
+      },
+      secondaryCallback: () {
+        // This will run when the user clicks CANCEL
+        // No action needed for cancel
+      },
+    );
+  }
+
+  void _showExitConfirmation(BuildContext context) {
+    AppRouter.showGlobalDialog(
+      title: 'Exit Assessment?',
+      message:
+          'You can continue this assessment later. Are you sure you want to exit?',
+      buttonText: 'EXIT',
+      secondaryButtonText: 'CANCEL',
+      primaryCallback: () {
+        // This will run when the user clicks EXIT
+        Navigator.pop(context, true); // Return to assessment list
+      },
+      secondaryCallback: () {
+        // This will run when the user clicks CANCEL
+        // No additional action needed as the dialog is already closed
+      },
+    );
   }
 
   void resetTest() {

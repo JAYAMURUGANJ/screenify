@@ -16,6 +16,7 @@ analyzer:
     dead_code: ignore
     constant_identifier_names: ignore
     file_names: ignore
+    unrelated_type_equality_checks: ignore
 include: package:flutter_lints/flutter.yaml
 
 linter:

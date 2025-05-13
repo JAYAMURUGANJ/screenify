@@ -3,8 +3,8 @@ class TypingAssessmentState {
   final String typedText;
   final bool isSubmitting;
   final bool isCompleted;
-  final String sampleText;
   final String instructions;
+  final String paragraph;
   final String description;
   final String title;
   final Map<String, dynamic>? results;
@@ -13,8 +13,8 @@ class TypingAssessmentState {
   const TypingAssessmentState({
     required this.typedText,
     required this.isSubmitting,
-    required this.sampleText,
     required this.instructions,
+    required this.paragraph,
     required this.description,
     required this.title,
     this.isCompleted = false,
@@ -26,7 +26,7 @@ class TypingAssessmentState {
     String? typedText,
     bool? isSubmitting,
     bool? isCompleted,
-    String? sampleText,
+    String? paragraph,
     String? instructions,
     String? description,
     String? title,
@@ -37,7 +37,7 @@ class TypingAssessmentState {
       typedText: typedText ?? this.typedText,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       isCompleted: isCompleted ?? this.isCompleted,
-      sampleText: sampleText ?? this.sampleText,
+      paragraph: paragraph ?? this.paragraph,
       instructions: instructions ?? this.instructions,
       description: description ?? this.description,
       title: title ?? this.title,

@@ -9,6 +9,11 @@ class GlobalTimerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Provide context to the timer provider
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<TimerProvider>(context, listen: false).setContext(context);
+    });
+
     return Consumer<TimerProvider>(
       builder: (context, timerProvider, _) {
         // Format the time as MM:SS
@@ -17,8 +22,8 @@ class GlobalTimerWidget extends StatelessWidget {
         // Determine color based on time remaining (red when < 5 minutes)
         final Color timeColor =
             timerProvider.remainingTimeInSeconds < 300
-                ? Colors.green
-                : Colors.red[800]!;
+                ? Colors.red[800]! // Red when less than 5 minutes
+                : Colors.green; // Green otherwise
 
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -47,36 +52,6 @@ class GlobalTimerWidget extends StatelessWidget {
                   color: timeColor,
                 ),
               ),
-              // if (!timerProvider.isRunning && !timerProvider.isComplete) ...[
-              //   const SizedBox(width: 4),
-              //   InkWell(
-              //     onTap: timerProvider.startTimer,
-              //     child: const Icon(
-              //       Icons.play_arrow,
-              //       size: 18,
-              //       color: Colors.green,
-              //     ),
-              //   ),
-              // ] else if (timerProvider.isRunning) ...[
-              //   const SizedBox(width: 4),
-              //   InkWell(
-              //     onTap: timerProvider.pauseTimer,
-              //     child: const Icon(
-              //       Icons.pause,
-              //       size: 18,
-              //       color: Colors.orange,
-              //     ),
-              //   ),
-              // ],
-              // const SizedBox(width: 4),
-              // InkWell(
-              //   onTap: timerProvider.resetTimer,
-              //   child: const Icon(
-              //     Icons.restart_alt,
-              //     size: 18,
-              //     color: Colors.blue,
-              //   ),
-              // ),
             ],
           ),
         );

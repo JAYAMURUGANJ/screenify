@@ -71,47 +71,69 @@ class McqAssessmentBloc extends Cubit<McqAssessmentState> {
     emit(state.copyWith(questions: updatedQuestions));
   }
 
-  Future<void> submitAssessment() async {
+  Future submitAssessment() async {
     if (state.isSubmitting) return;
 
     emit(state.copyWith(isSubmitting: true));
 
-    // Calculate score
-    int score = 0;
+    // Calculate score and detailed analysis
+    int correctCount = 0;
+    int errorCount = 0;
+    List<Map<String, dynamic>> questionsAnalysis = [];
+
     for (var question in state.questions) {
-      if (question.selectedAnswerIndex == question.correctAnswerIndex) {
-        score++;
+      bool isCorrect =
+          question.selectedAnswerIndex == question.correctAnswerIndex;
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        errorCount++;
       }
+      questionsAnalysis.add({
+        'question': question.question,
+        'selectedAnswerIndex': question.selectedAnswerIndex,
+        'correctAnswerIndex': question.correctAnswerIndex,
+        'isCorrect': isCorrect,
+      });
     }
 
-    // Calculate time spent
-    final endTime = DateTime.now();
-    int timeInSeconds = endTime.difference(startTime!).inSeconds;
+    // Calculate accuracy and skill level
+    int totalQuestions = state.questions.length;
+    double accuracy =
+        totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0.0;
+    accuracy = double.parse(accuracy.toStringAsFixed(1));
 
-    // Create questions data
-    List<Map<String, dynamic>> questionsData =
-        state.questions.map((question) {
-          return {
-            'question': question.question,
-            'selectedAnswerIndex': question.selectedAnswerIndex,
-            'correctAnswerIndex': question.correctAnswerIndex,
-            'isCorrect':
-                question.selectedAnswerIndex == question.correctAnswerIndex,
-          };
-        }).toList();
+    String skillLevel = _assessSkillLevel(accuracy);
 
-    // Create final result object
+    // Pass/fail logic
+    bool passed = _determinePassFail(accuracy, errorCount);
+
+    // Feedback generation
+    String feedback = _generateFeedback(
+      accuracy,
+      errorCount,
+      passed,
+      correctCount,
+    );
+
+    // Current timestamp for submission date and completion date
+    final currentDateTime = DateTime.now().toIso8601String();
+
+    // Create final result object with the requested structure
     Map<String, dynamic> result = {
-      'totalQuestions': state.questions.length,
-      'correctCount': score,
-      'wrongCount': state.questions.length - score,
-      'score': score,
-      'scorePercentage': (score / state.questions.length * 100).toStringAsFixed(
-        1,
-      ),
-      'questions': questionsData,
-      'timeInSeconds': timeInSeconds,
-      'completedAt': DateTime.now().toIso8601String(),
+      "submissionDate": currentDateTime,
+      "completedAt": currentDateTime,
+      "skillLevel": skillLevel,
+      "score": correctCount,
+      "scorePercentage": accuracy.toInt(),
+      "passed": passed,
+      "feedback": feedback,
+      "details": {
+        "totalQuestions": totalQuestions,
+        "correctCount": correctCount,
+        "wrongCount": errorCount,
+        "questions": questionsAnalysis,
+      },
     };
 
     // Save result to database through the AssessmentBloc
@@ -136,12 +158,67 @@ class McqAssessmentBloc extends Cubit<McqAssessmentState> {
 
     emit(
       state.copyWith(
-        score: score,
+        score: correctCount,
         result: result,
         isSubmitting: false,
         isCompleted: true,
       ),
     );
+  }
+
+  // Helper functions
+  String _assessSkillLevel(double accuracy) {
+    if (accuracy >= 95) return 'Expert';
+    if (accuracy >= 85) return 'Advanced';
+    if (accuracy >= 70) return 'Intermediate';
+    if (accuracy >= 50) return 'Basic';
+    return 'Beginner';
+  }
+
+  bool _determinePassFail(double accuracy, int errors) {
+    const double minimumAccuracy = 70.0;
+    const int maximumErrors = 5;
+    return accuracy >= minimumAccuracy && errors <= maximumErrors;
+  }
+
+  String _generateFeedback(
+    double accuracy,
+    int errors,
+    bool passed,
+    int score,
+  ) {
+    List<String> feedbackPoints = [];
+    if (accuracy >= 95) {
+      feedbackPoints.add('Outstanding MCQ performance!');
+    } else if (accuracy >= 85) {
+      feedbackPoints.add('Very good MCQ performance.');
+    } else if (accuracy >= 70) {
+      feedbackPoints.add('Satisfactory MCQ performance.');
+    } else if (accuracy >= 50) {
+      feedbackPoints.add('Needs improvement in MCQ answers.');
+    } else {
+      feedbackPoints.add('Significant improvement needed in MCQ performance.');
+    }
+    if (errors > 0) {
+      if (errors <= 2) {
+        feedbackPoints.add('Only a few mistakes.');
+      } else if (errors <= 5) {
+        feedbackPoints.add('Several mistakes to address.');
+      } else {
+        feedbackPoints.add('Many mistakes affected your score.');
+      }
+    }
+    if (accuracy == 100) {
+      return 'Perfect score! All answers correct. You passed!';
+    }
+    if (passed) {
+      feedbackPoints.add('You passed the MCQ test with a score of $score!');
+    } else {
+      feedbackPoints.add(
+        'You did not pass. Score: $score. Please review and try again.',
+      );
+    }
+    return feedbackPoints.join(' ');
   }
 
   @override
