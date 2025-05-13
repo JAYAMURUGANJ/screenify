@@ -23,13 +23,33 @@ class CandidateRepositoryImpl implements AuthRepository {
       gender: candidate.gender,
     );
 
-    final response = await _dio.post('register.php', data: model.toJson());
+    try {
+      final response = await _dio.post('register.php', data: model.toJson());
 
-    if (response.data['status'] != 'success') {
-      throw ServerException('Registration failed: ${response.data}');
+      if (response.data['status'] != 'success') {
+        throw ServerException(
+          message: 'Server error: ${response.data['message'] ?? response.data}',
+          code: 500,
+          stackTrace: StackTrace.current,
+        );
+      }
+
+      return CandidateEntity(candidateId: response.data['candidate_id']);
+    } on DioException catch (dioError) {
+      // Handle Dio-specific errors (network, timeout, etc.)
+      throw ServerException(
+        message: 'Network error: ${dioError.message}',
+        code: dioError.response?.statusCode,
+        stackTrace: dioError.stackTrace,
+      );
+    } catch (e, stack) {
+      // Handle any other errors
+      throw ServerException(
+        message: 'Unexpected error: $e',
+        code: 500,
+        stackTrace: stack,
+      );
     }
-
-    return CandidateEntity(candidateId: response.data['candidate_id']);
   }
 
   @override
@@ -39,13 +59,31 @@ class CandidateRepositoryImpl implements AuthRepository {
       dob: candidate.dob,
     );
 
-    final response = await _dio.post('login.php', data: model.toJson());
-    debugPrint('Response: ${response.data}');
+    try {
+      final response = await _dio.post('login.php', data: model.toJson());
+      debugPrint('Response: ${response.data}');
 
-    if (response.data['status'] != 'success') {
-      throw ServerException('Login failed: ${response.data}');
+      if (response.data['status'] != 'success') {
+        throw ServerException(
+          message: 'Server error: ${response.data['message'] ?? response.data}',
+          code: 401, // Use appropriate code for login failure
+          stackTrace: StackTrace.current,
+        );
+      }
+
+      return QuestionsModel.fromJson(response.data);
+    } on DioException catch (dioError) {
+      throw ServerException(
+        message: 'Network error: ${dioError.message}',
+        code: dioError.response?.statusCode,
+        stackTrace: dioError.stackTrace,
+      );
+    } catch (e, stack) {
+      throw ServerException(
+        message: 'Unexpected error: $e',
+        code: 500,
+        stackTrace: stack,
+      );
     }
-
-    return QuestionsModel.fromJson(response.data);
   }
 }

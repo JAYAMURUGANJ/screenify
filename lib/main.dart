@@ -24,10 +24,6 @@ void main() async {
     });
   }
 
-  // if (Platform.isWindows) {
-  //   // Hide taskbar on Windows
-  //   WindowService().hideTaskbar();
-  // }
   //only show the observer when debugging
   if (kDebugMode) {
     Bloc.observer = SimpleBlocObserver();

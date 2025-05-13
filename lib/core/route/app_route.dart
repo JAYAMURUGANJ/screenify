@@ -9,6 +9,7 @@ import '../../presentation/form/pages/form_screen.dart';
 import '../../presentation/mcq/pages/mcq_screen.dart';
 import '../../presentation/typing/pages/Typing_screen.dart';
 import '../widgets/app_splash.dart';
+import '../widgets/global_dialog.dart';
 
 class AppRouter {
   // Global navigation key for accessing navigator from anywhere
@@ -244,30 +245,16 @@ class AppRouter {
     return null;
   }
 
-  // Helper method to show error dialog
+  @Deprecated('Use DialogUtils.showError instead')
   static void showErrorDialog(
     BuildContext context,
     String title,
     String message,
   ) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            title: Text(title),
-            content: Text(message),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text("OK"),
-              ),
-            ],
-          ),
-    );
+    DialogUtils.showError(title: title, message: message);
   }
 
-  // Method to show a global dialog without context
+  @Deprecated('Use DialogUtils.showGlobalDialog instead')
   static void showGlobalDialog({
     required String title,
     required String message,
@@ -276,42 +263,14 @@ class AppRouter {
     VoidCallback? primaryCallback,
     VoidCallback? secondaryCallback,
   }) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: Text(title),
-              content: Text(message),
-              actions: [
-                if (secondaryButtonText != null)
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      if (secondaryCallback != null) {
-                        secondaryCallback();
-                      }
-                    },
-                    child: Text(secondaryButtonText),
-                  ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    if (primaryCallback != null) {
-                      primaryCallback();
-                    }
-                  },
-                  child: Text(buttonText ?? 'OK'),
-                ),
-              ],
-            );
-          },
-        );
-      }
-    });
+    DialogUtils.showGlobalDialog(
+      title: title,
+      message: message,
+      primaryButtonText: buttonText,
+      secondaryButtonText: secondaryButtonText,
+      primaryCallback: primaryCallback,
+      secondaryCallback: secondaryCallback,
+    );
   }
 
   // Helper method to navigate to a named route
