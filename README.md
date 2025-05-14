@@ -4,9 +4,6 @@ A Flutter application that embeds Microsoft Office applications within a contain
 
 ## Features
 
-- Embeds Microsoft Word, Excel, and PowerPoint within the Flutter application
-- Prevents Alt+Tab switching to escape the application
-- Automatically keeps focus on the embedded application
 - Full-screen mode to prevent access to desktop
 - Hides the Windows taskbar for a complete kiosk experience
 - Clean UI with sidebar navigation
@@ -22,26 +19,6 @@ A Flutter application that embeds Microsoft Office applications within a contain
 1. Clone this repository
 2. Run `flutter pub get` to install dependencies
 3. Run `flutter run` to start the application
-
-## Configuration
-
-You may need to adjust the paths to Office applications in the `home_screen.dart` file if you have a different version of Office installed:
-
-```dart
-onEmbedWord: () => _windowService.embedApplication(
-  'C:\\Program Files (x86)\\Microsoft Office\\Office12\\WINWORD.EXE',
-  'Word',
-  setState,
-),
-```
-
-## Project Structure
-
-- `lib/main.dart` - Application entry point
-- `lib/app.dart` - Main application widget
-- `lib/services/` - Service classes for window and keyboard management
-- `lib/utils/` - Utility functions for Win32 API
-- `lib/ui/` - UI components and screens
 
 ## How It Works
 

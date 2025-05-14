@@ -65,7 +65,12 @@ class TimerProvider extends ChangeNotifier {
 
         // Check for 10-minute mark
         if (_remainingTimeInSeconds == 600) {
-          _showTenMinuteWarning();
+          _showTenMinuteWarning(10);
+        }
+
+        // Check for 5-minute mark
+        if (_remainingTimeInSeconds == 300) {
+          _showTenMinuteWarning(5);
         }
 
         notifyListeners();
@@ -97,11 +102,9 @@ class TimerProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _showTenMinuteWarning() {
-    // Use AppRouter.showGlobalDialog instead of direct context
-
+  void _showTenMinuteWarning(int time) {
     AppRouter.showGlobalDialog(
-      title: 'Only 10 Minutes Remaining',
+      title: 'Only $time Minutes Remaining',
       message:
           'Please submit all completed tasks. If any assessments are pending, complete them quickly.',
       buttonText: 'Okay',

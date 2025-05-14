@@ -13,6 +13,7 @@ import '/core/widgets/department_details.dart';
 import '/core/widgets/global_timer.dart';
 import '/domain/entities/questions_entity.dart';
 import '../../../core/local/assessment_database_helper.dart';
+import '../../../core/utils/timer_provider.dart';
 import '../../../core/widgets/completion_dialog.dart';
 import '../bloc/assessment_bloc.dart';
 import '../bloc/assessment_event.dart';
@@ -32,8 +33,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   late TabController _tabController;
   final AssessmentDatabaseHelper _dbHelper = AssessmentDatabaseHelper();
 
-  int _selectedTabIndex = 0;
   bool _checkedCompletionStatus = false;
+  bool _dialogShown = false;
+  bool _showTimer = false;
 
   @override
   void initState() {
@@ -43,16 +45,85 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Initialize Bloc with assessments data
     _loadAssessmentsFromEntity();
+    // Delay to let context settle before showing dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_dialogShown) {
+        _showStartDialog();
+        _dialogShown = true;
+      }
+    });
+  }
+
+  void _showStartDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            title: const Text(
+              'Assessment Instructions',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: const <Widget>[
+                  Text(
+                    "📌 Welcome to your assessment! Please carefully follow these instructions:\n",
+                  ),
+                  Text(
+                    "• You must complete and submit your tasks before the time limit expires.",
+                  ),
+                  Text(
+                    "• ⚠️ Only tasks that are submitted will be considered for evaluation.",
+                  ),
+                  Text(
+                    "• A reminder will be shown 10 minutes before the deadline.",
+                  ),
+                  Text(
+                    "• Another reminder will appear 5 minutes before the deadline.",
+                  ),
+                  Text(
+                    "• Tasks not submitted before the deadline will be marked as incomplete.",
+                  ),
+                  Text(
+                    "• Ensure you click the 'Submit' button to confirm your task submission.",
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    "All the best for your assessment!",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  setState(() {
+                    _showTimer = true;
+                  });
+
+                  // Start the timer from the dialog button
+                  context.read<TimerProvider>().resetTimer();
+
+                  context.read<TimerProvider>().startTimer(context);
+                },
+                child: Text('Start'),
+              ),
+            ],
+          ),
+    );
   }
 
   void _handleTabChange() {
-    if (_tabController.indexIsChanging) {
-      _selectedTabIndex = _tabController.index;
-      // Use Bloc for tab selection
-      context.read<AssessmentBloc>().add(
-        ChangeTabEvent(tabIndex: _selectedTabIndex),
-      );
-    }
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        context.read<AssessmentBloc>().add(
+          ChangeTabEvent(tabIndex: _tabController.index),
+        );
+      }
+    });
   }
 
   @override
@@ -361,7 +432,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         ],
       ),
       actions: [
-        GlobalTimerWidget(),
+        Visibility(visible: _showTimer, child: GlobalTimerWidget()),
         const SizedBox(width: 12),
         CandidateProfile(
           name: widget.assessmentDetails.candidateName,

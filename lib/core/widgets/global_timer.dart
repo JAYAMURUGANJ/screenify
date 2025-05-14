@@ -9,53 +9,44 @@ class GlobalTimerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Provide context to the timer provider
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<TimerProvider>(context, listen: false).setContext(context);
-    });
+    final timerProvider = context.watch<TimerProvider>();
 
-    return Consumer<TimerProvider>(
-      builder: (context, timerProvider, _) {
-        // Format the time as MM:SS
-        final timeText = timerProvider.formattedTime;
+    final Color timeColor =
+        timerProvider.remainingTimeInSeconds < 300
+            ? Colors.red[800]!
+            : Colors.green;
 
-        // Determine color based on time remaining (red when < 5 minutes)
-        final Color timeColor =
-            timerProvider.remainingTimeInSeconds < 300
-                ? Colors.red[800]! // Red when less than 5 minutes
-                : Colors.green; // Green otherwise
+    final timeText = timerProvider.formattedTime;
 
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                spreadRadius: 1,
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.timer, size: 20, color: timeColor),
-              const SizedBox(width: 6),
-              Text(
-                timeText,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: timeColor,
-                ),
-              ),
-            ],
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.timer, size: 20, color: timeColor),
+          const SizedBox(width: 6),
+          Text(
+            timeText,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: timeColor,
+            ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
 }

@@ -245,7 +245,6 @@ class AppRouter {
     return null;
   }
 
-  @Deprecated('Use DialogUtils.showError instead')
   static void showErrorDialog(
     BuildContext context,
     String title,
@@ -254,7 +253,6 @@ class AppRouter {
     DialogUtils.showError(title: title, message: message);
   }
 
-  @Deprecated('Use DialogUtils.showGlobalDialog instead')
   static void showGlobalDialog({
     required String title,
     required String message,
