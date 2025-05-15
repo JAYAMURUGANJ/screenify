@@ -46,4 +46,6 @@ abstract class AssessmentLocalRepository {
 
   /// Check if assessment is completed
   Future<bool> isAssessmentCompleted(String candidateId, String assessmentType);
+
+  Future<String> submitAssessmentToApi(dynamic result);
 }

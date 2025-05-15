@@ -1,10 +1,16 @@
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+import '../../core/exception/server_exception.dart';
 import '../../core/local/assessment_database_helper.dart';
+import '../../core/network/dio_client.dart';
 import '../../domain/repositories/assessment_local_repository.dart';
 
 /// Implementation of the AssessmentLocalRepository that works with the
 /// AssessmentDatabaseHelper
 class AssessmentLocalRepositoryImpl implements AssessmentLocalRepository {
   final AssessmentDatabaseHelper _dbHelper;
+  final Dio _dio = DioClient.create();
 
   /// Constructor that takes the database helper instance
   AssessmentLocalRepositoryImpl({AssessmentDatabaseHelper? dbHelper})
@@ -106,5 +112,38 @@ class AssessmentLocalRepositoryImpl implements AssessmentLocalRepository {
   /// Get the status update stream
   Stream<String> getStatusUpdates() {
     return _dbHelper.statusUpdates;
+  }
+
+  @override
+  Future<String> submitAssessmentToApi(result) async {
+    try {
+      final response = await _dio.post(
+        'assessment_submit_new.php',
+        data: result,
+      );
+      debugPrint('Response: ${response.data}');
+
+      if (response.data['status'] != 'success') {
+        throw ServerException(
+          message: 'Server error: ${response.data['message'] ?? response.data}',
+          code: 401, // Use appropriate code for login failure
+          stackTrace: StackTrace.current,
+        );
+      }
+
+      return response.data["message"];
+    } on DioException catch (dioError) {
+      throw ServerException(
+        message: 'Network error: ${dioError.message}',
+        code: dioError.response?.statusCode,
+        stackTrace: dioError.stackTrace,
+      );
+    } catch (e, stack) {
+      throw ServerException(
+        message: 'Unexpected error: $e',
+        code: 500,
+        stackTrace: stack,
+      );
+    }
   }
 }

@@ -126,7 +126,7 @@ class McqAssessmentBloc extends Cubit<McqAssessmentState> {
       "skillLevel": skillLevel,
       "score": correctCount,
       "scorePercentage": accuracy.toInt(),
-      "passed": passed,
+      "passed": passed.toString(),
       "feedback": feedback,
       "details": {
         "totalQuestions": totalQuestions,

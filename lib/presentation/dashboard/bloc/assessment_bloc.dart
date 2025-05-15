@@ -15,6 +15,7 @@ class AssessmentBloc extends Bloc<AssessmentEvent, AssessmentState> {
   final SaveAssessmentResultUseCase saveAssessmentResultUseCase;
   final MarkAssessmentAsStartedUseCase markAssessmentAsStartedUseCase;
   final MarkAssessmentAsCompletedUseCase markAssessmentAsCompletedUseCase;
+  final SubmitAssessmetToApiUseCase submitAssessmetToApiUseCase;
   final StreamSubscription? _statusSubscription;
 
   AssessmentBloc({
@@ -23,6 +24,7 @@ class AssessmentBloc extends Bloc<AssessmentEvent, AssessmentState> {
     required this.saveAssessmentResultUseCase,
     required this.markAssessmentAsStartedUseCase,
     required this.markAssessmentAsCompletedUseCase,
+    required this.submitAssessmetToApiUseCase,
     StreamSubscription? statusSubscription,
   }) : _statusSubscription = statusSubscription,
        super(AssessmentInitial()) {
@@ -34,6 +36,7 @@ class AssessmentBloc extends Bloc<AssessmentEvent, AssessmentState> {
     on<RefreshAssessmentStatusesEvent>(_onRefreshAssessmentStatuses);
     on<ResetDatabaseEvent>(_onResetDatabase);
     on<ChangeTabEvent>(onChangeTab);
+    on<SubmitAssessmentToApiEvent>(onSubmitAssessmentToApi);
   }
 
   Future<void> _onLoadAssessments(
@@ -372,5 +375,18 @@ class AssessmentBloc extends Bloc<AssessmentEvent, AssessmentState> {
   Future<void> close() {
     _statusSubscription?.cancel();
     return super.close();
+  }
+
+  Future<void> onSubmitAssessmentToApi(
+    SubmitAssessmentToApiEvent event,
+    Emitter<AssessmentState> emit,
+  ) async {
+    emit(AssessmentLoading());
+    try {
+      final submittedState = await submitAssessmetToApiUseCase(event.restult);
+      emit(AssessmentSubmitted(message: submittedState));
+    } catch (e) {
+      emit(AssessmentNotSubmitted(error: e.toString()));
+    }
   }
 }

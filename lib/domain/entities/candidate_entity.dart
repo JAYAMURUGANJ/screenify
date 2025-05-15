@@ -6,6 +6,7 @@ class CandidateEntity {
   final String? phone;
   final String? dob;
   final String? gender;
+  final String? systemIp;
 
   CandidateEntity({
     this.candidateId,
@@ -15,5 +16,6 @@ class CandidateEntity {
     this.phone,
     this.dob,
     this.gender,
+    this.systemIp,
   });
 }

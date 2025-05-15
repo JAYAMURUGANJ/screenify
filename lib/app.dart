@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
-import 'package:screenify/core/widgets/completion_dialog.dart';
+import 'package:screenify/presentation/dashboard/widget/completion_dialog.dart';
 
 import 'core/local/shared_pref.dart';
 import 'core/route/app_route.dart';
@@ -72,6 +72,9 @@ class MyApp extends StatelessWidget {
                     MarkAssessmentAsCompletedUseCase(
                       repository: assessmentRepository,
                     ),
+                submitAssessmetToApiUseCase: SubmitAssessmetToApiUseCase(
+                  repository: assessmentRepository,
+                ),
               ),
         ),
 
@@ -79,7 +82,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create:
               (_) => TimerProvider(
-                durationInMinutes: 15,
+                durationInMinutes: 1,
                 autoStart: true,
                 onTimerComplete: () async {
                   final sharedPref = await SharedPref.getInstance();

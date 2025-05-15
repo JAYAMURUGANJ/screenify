@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -55,7 +57,21 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     }
   }
 
-  void _registerCandidate() {
+  Future<String> getLocalIpAddress() async {
+    String systemIp = "";
+    for (var interface in await NetworkInterface.list()) {
+      for (var addr in interface.addresses) {
+        if (addr.type == InternetAddressType.IPv4 && !addr.isLoopback) {
+          debugPrint('Local IP Address: ${addr.address}');
+          systemIp = addr.address;
+        }
+      }
+    }
+    return systemIp;
+  }
+
+  Future<void> _registerCandidate() async {
+    String systemIp = await getLocalIpAddress();
     if (_formKey.currentState!.validate()) {
       final candidate = CandidateEntity(
         aadhar: _aadharController.text,
@@ -65,6 +81,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         dob: _dobController.text,
         gender: _selectedGender!,
         candidateId: '',
+        systemIp: systemIp,
       );
 
       // Dispatch registration event to the Bloc

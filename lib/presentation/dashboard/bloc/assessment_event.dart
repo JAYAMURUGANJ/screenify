@@ -95,3 +95,12 @@ class ChangeTabEvent extends AssessmentEvent {
 }
 
 class ResetDatabaseEvent extends AssessmentEvent {}
+
+class SubmitAssessmentToApiEvent extends AssessmentEvent {
+  final dynamic restult;
+
+  SubmitAssessmentToApiEvent({required this.restult});
+
+  @override
+  List<Object?> get props => [restult];
+}

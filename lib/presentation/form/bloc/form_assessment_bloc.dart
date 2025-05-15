@@ -161,6 +161,8 @@ class FormFillingAssessmentBloc extends Cubit<FormFillingAssessmentState> {
     // Round to 2 decimal places
     score = double.parse(score.toStringAsFixed(2));
 
+    String passed = (score >= 80).toString();
+
     // Generate simplified assessment result
     Map<String, dynamic> assessmentResult = {
       "submissionDate": DateTime.now().toIso8601String(),
@@ -168,7 +170,7 @@ class FormFillingAssessmentBloc extends Cubit<FormFillingAssessmentState> {
       "skillLevel": "Intermediate",
       "score": score,
       "scorePercentage": score,
-      "passed": score >= 80,
+      "passed": passed,
       "feedback": generateFeedback(score, emptyFields),
       "details": {
         "formDetails": {

@@ -14,10 +14,10 @@ import '/core/widgets/global_timer.dart';
 import '/domain/entities/questions_entity.dart';
 import '../../../core/local/assessment_database_helper.dart';
 import '../../../core/utils/timer_provider.dart';
-import '../../../core/widgets/completion_dialog.dart';
 import '../bloc/assessment_bloc.dart';
 import '../bloc/assessment_event.dart';
 import '../bloc/assessment_state.dart';
+import '../widget/completion_dialog.dart';
 
 class DashboardScreen extends StatefulWidget {
   final QuestionsEntity assessmentDetails;

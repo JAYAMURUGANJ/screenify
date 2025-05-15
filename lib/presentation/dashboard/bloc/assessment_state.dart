@@ -68,3 +68,20 @@ class AssessmentResultSaved extends AssessmentState {
 }
 
 class DatabaseReset extends AssessmentState {}
+
+class AssessmentSubmitted extends AssessmentState {
+  final String message;
+
+  AssessmentSubmitted({required this.message});
+
+  @override
+  List<Object?> get props => [message];
+}
+
+class AssessmentNotSubmitted extends AssessmentState {
+  final String error;
+
+  AssessmentNotSubmitted({required this.error});
+  @override
+  List<Object?> get props => [error];
+}

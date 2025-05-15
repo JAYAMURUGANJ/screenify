@@ -124,3 +124,15 @@ class IsAssessmentCompletedUseCase {
     return repository.isAssessmentCompleted(candidateId, assessmentType);
   }
 }
+
+/// Submitt Assessment Result to tht API
+
+class SubmitAssessmetToApiUseCase {
+  final AssessmentLocalRepository repository;
+
+  SubmitAssessmetToApiUseCase({required this.repository});
+
+  Future<String> call(dynamic result) {
+    return repository.submitAssessmentToApi(result);
+  }
+}

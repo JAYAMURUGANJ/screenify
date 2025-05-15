@@ -207,7 +207,7 @@ class EmailAssessmentBloc extends Cubit<EmailAssessmentState> {
       "skillLevel": skillLevel,
       "score": score,
       "scorePercentage": score,
-      "passed": passed,
+      "passed": passed.toString(),
       "timeInSeconds": timeInSeconds,
       "feedback": feedback,
       "details": {
