@@ -4,26 +4,33 @@ import '../../domain/entities/questions_entity.dart';
 class QuestionsModel extends QuestionsEntity {
   QuestionsModel({
     required super.status,
-    required super.candidateId,
-    required super.candidateName,
-    required List<AssessmentModel> super.assessments,
+    super.message,
+    super.candidateId,
+    super.candidateName,
+    super.assessments,
   });
 
   factory QuestionsModel.fromJson(Map<String, dynamic> json) {
     return QuestionsModel(
-      status: json['status'],
-      candidateId: json['candidate_id'],
-      candidateName: json['candidate_name'],
+      status:
+          json['status'] ??
+          false, // Assuming it's a bool or int, adjust if needed
+      message: json['message'] ?? "",
+      candidateId: json['candidate_id'] ?? '',
+      candidateName: json['candidate_name'] ?? '',
       assessments:
-          (json['assessments'] as List)
-              .map((e) => AssessmentModel.fromJson(e))
-              .toList(),
+          json['assessments'] != null
+              ? (json['assessments'] as List)
+                  .map((e) => AssessmentModel.fromJson(e))
+                  .toList()
+              : [],
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'status': status,
+      'message': message,
       'candidate_id': candidateId,
       'candidate_name': candidateName,
       'assessments':

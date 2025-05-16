@@ -63,7 +63,9 @@ class CandidateRepositoryImpl implements AuthRepository {
       final response = await _dio.post('login.php', data: model.toJson());
       debugPrint('Response: ${response.data}');
 
-      if (response.data['status'] != 'success') {
+      if (response.data['status'] == 'failure') {
+        
+      } else {
         throw ServerException(
           message: 'Server error: ${response.data['message'] ?? response.data}',
           code: 401, // Use appropriate code for login failure

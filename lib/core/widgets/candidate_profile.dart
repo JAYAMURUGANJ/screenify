@@ -15,7 +15,7 @@ class CandidateProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => _showProfileMenu(context),
+      onTapDown: (details) => _showProfileMenu(context, details.globalPosition),
       child: Padding(
         padding: const EdgeInsets.only(right: 16),
         child: CircleAvatar(
@@ -34,81 +34,51 @@ class CandidateProfile extends StatelessWidget {
     );
   }
 
-  void _showProfileMenu(BuildContext context) {
-    showModalBottomSheet(
+  void _showProfileMenu(BuildContext context, Offset position) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    showMenu(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Offset.zero & overlay.size,
       ),
-      builder:
-          (context) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundColor: Colors.indigo[100],
-                  child: Text(
-                    _getInitials(name),
-                    style: const TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.indigo,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  name,
+      items: [
+        PopupMenuItem(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              CircleAvatar(
+                radius: 40,
+                backgroundColor: Colors.indigo[100],
+                child: Text(
+                  _getInitials(name),
                   style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.indigo,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  candidateId,
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
-                const Divider(height: 30),
-                ListTile(
-                  leading: const Icon(Icons.person_outline),
-                  title: const Text('My Profile'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/profile');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.settings_outlined),
-                  title: const Text('Settings'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.pushNamed(context, '/settings');
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text(
-                    'Logout',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/login',
-                      (route) => false,
-                    );
-                    // Implement your logout logic here
-                    //await assessmentPreferencesManager.clearAllAssessmentData();
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
-            ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                candidateId,
+                style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              ),
+            ],
           ),
+        ),
+      ],
     );
   }
 

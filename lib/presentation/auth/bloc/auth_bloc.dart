@@ -32,18 +32,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final assessmentQuestions = await loginCandidate(event.candidate);
 
-        debugPrint('Assessment Questions: ${assessmentQuestions.candidateId}');
+        if (assessmentQuestions.status == "success") {
+          debugPrint(
+            'Assessment Questions: ${assessmentQuestions.candidateId}',
+          );
 
-        // Get SharedPref instance
-        final sharedPref = await SharedPref.getInstance();
+          // Get SharedPref instance
+          final sharedPref = await SharedPref.getInstance();
 
-        // Store candidateId to SharedPreferences
-        await sharedPref.setString(
-          'candidate_id',
-          assessmentQuestions.candidateId.toString(),
-        );
+          // Store candidateId to SharedPreferences
+          await sharedPref.setString(
+            'candidate_id',
+            assessmentQuestions.candidateId.toString(),
+          );
 
-        emit(LoginSuccess(assessmentQuestions));
+          emit(LoginSuccess(assessmentQuestions));
+        } else if (assessmentQuestions.status == "failure") {
+          emit(LoginFailure(assessmentQuestions.message ?? "Login Failure"));
+        }
       } catch (e) {
         emit(LoginFailure(e.toString()));
       }

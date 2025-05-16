@@ -1,14 +1,16 @@
 class QuestionsEntity {
   final String status;
-  final String candidateId;
-  final String candidateName;
-  final List<AssessmentEntity> assessments;
+  final String? message;
+  final String? candidateId;
+  final String? candidateName;
+  final List<AssessmentEntity>? assessments;
 
   QuestionsEntity({
     required this.status,
-    required this.candidateName,
-    required this.candidateId,
-    required this.assessments,
+    this.candidateName,
+    this.candidateId,
+    this.assessments,
+    this.message,
   });
 }
 

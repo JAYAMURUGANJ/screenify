@@ -141,8 +141,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Dispatch Bloc event to refresh assessment statuses
     context.read<AssessmentBloc>().add(
       RefreshAssessmentStatusesEvent(
-        candidateId: widget.assessmentDetails.candidateId,
-        assessments: widget.assessmentDetails.assessments,
+        candidateId: widget.assessmentDetails.candidateId!,
+        assessments: widget.assessmentDetails.assessments!,
       ),
     );
   }
@@ -170,7 +170,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           barrierDismissible: false,
           builder: (BuildContext context) {
             return CompletionDialog(
-              candidateId: widget.assessmentDetails.candidateId,
+              candidateId: widget.assessmentDetails.candidateId!,
             );
           },
         );
@@ -182,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Mark assessment as started using BLoC
     context.read<AssessmentBloc>().add(
       MarkAssessmentStartedEvent(
-        candidateId: widget.assessmentDetails.candidateId,
+        candidateId: widget.assessmentDetails.candidateId!,
         assessmentType: assessment.type,
       ),
     );
@@ -220,8 +220,8 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Use BLoC to refresh assessment statuses
     context.read<AssessmentBloc>().add(
       RefreshAssessmentStatusesEvent(
-        candidateId: widget.assessmentDetails.candidateId,
-        assessments: widget.assessmentDetails.assessments,
+        candidateId: widget.assessmentDetails.candidateId!,
+        assessments: widget.assessmentDetails.assessments!,
       ),
     );
   }
@@ -435,8 +435,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         Visibility(visible: _showTimer, child: GlobalTimerWidget()),
         const SizedBox(width: 12),
         CandidateProfile(
-          name: widget.assessmentDetails.candidateName,
-          candidateId: widget.assessmentDetails.candidateId,
+          name: widget.assessmentDetails.candidateName!,
+          candidateId: widget.assessmentDetails.candidateId!,
         ),
       ],
     );
