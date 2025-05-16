@@ -29,6 +29,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   DateTime? _selectedDate;
   String? _selectedGender;
 
+  // Regex patterns for validation
+  final RegExp _aadharPattern = RegExp(r'^\d{12}$');
+  final RegExp _emailPattern = RegExp(
+    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  );
+  final RegExp _phonePattern = RegExp(r'^[6-9]\d{9}$');
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -407,15 +414,22 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       prefixIcon: const Icon(Icons.credit_card),
                                       filled: true,
                                       fillColor: Colors.grey[50],
+                                      helperText:
+                                          'Enter only digits, no spaces or hyphens',
                                     ),
                                     keyboardType: TextInputType.number,
+                                    maxLength: 12,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter your Aadhar number';
                                       }
-                                      if (value.length != 12) {
-                                        return 'Aadhar number must be 12 digits';
+                                      if (!_aadharPattern.hasMatch(value)) {
+                                        return 'Aadhar number must be exactly 12 digits';
                                       }
+                                      // You can add Verhoeff algorithm validation here for more robust Aadhar validation
                                       return null;
                                     },
                                   ),
@@ -451,16 +465,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       prefixIcon: const Icon(Icons.email),
                                       filled: true,
                                       fillColor: Colors.grey[50],
+                                      helperText: 'Format: example@domain.com',
                                     ),
                                     keyboardType: TextInputType.emailAddress,
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter your email';
                                       }
-                                      if (!RegExp(
-                                        r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                                      ).hasMatch(value)) {
-                                        return 'Please enter a valid email';
+                                      if (!_emailPattern.hasMatch(value)) {
+                                        return 'Please enter a valid email address';
                                       }
                                       return null;
                                     },
@@ -477,14 +490,20 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                                       prefixIcon: const Icon(Icons.phone),
                                       filled: true,
                                       fillColor: Colors.grey[50],
+                                      helperText:
+                                          'Indian mobile number starting with 6-9',
                                     ),
                                     keyboardType: TextInputType.phone,
+                                    maxLength: 10,
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                    ],
                                     validator: (value) {
                                       if (value == null || value.isEmpty) {
                                         return 'Please enter your phone number';
                                       }
-                                      if (value.length != 10) {
-                                        return 'Phone number must be 10 digits';
+                                      if (!_phonePattern.hasMatch(value)) {
+                                        return 'Please enter a valid 10-digit mobile number starting with 6-9';
                                       }
                                       return null;
                                     },
