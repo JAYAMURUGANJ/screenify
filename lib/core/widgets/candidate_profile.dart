@@ -16,17 +16,19 @@ class CandidateProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTapDown: (details) => _showProfileMenu(context, details.globalPosition),
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16),
-        child: CircleAvatar(
-          radius: 18,
-          backgroundColor: _getAvatarColor(name),
-          child: Text(
-            _getInitials(name),
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: CircleAvatar(
+            radius: 18,
+            backgroundColor: _getAvatarColor(name),
+            child: Text(
+              _getInitials(name),
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
             ),
           ),
         ),
@@ -99,6 +101,7 @@ class CandidateProfile extends StatelessWidget {
     final Random random = Random(hashCode);
 
     final List<MaterialColor> colors = [
+      Colors.indigo,
       Colors.blue,
       Colors.green,
       Colors.purple,
@@ -106,7 +109,6 @@ class CandidateProfile extends StatelessWidget {
       Colors.teal,
       Colors.pink,
       Colors.deepOrange,
-      Colors.indigo,
     ];
 
     return colors[random.nextInt(colors.length)][300]!;

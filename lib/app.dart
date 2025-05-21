@@ -82,7 +82,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(
           create:
               (_) => TimerProvider(
-                durationInMinutes: 1,
+                durationInMinutes: 30,
                 autoStart: true,
                 onTimerComplete: () async {
                   final sharedPref = await SharedPref.getInstance();
