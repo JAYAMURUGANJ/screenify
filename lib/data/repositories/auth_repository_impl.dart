@@ -26,6 +26,8 @@ class CandidateRepositoryImpl implements AuthRepository {
     try {
       final response = await _dio.post('register.php', data: model.toJson());
 
+      debugPrint('Response: ${response.data}');
+
       if (response.data['status'] != 'success') {
         throw ServerException(
           message: 'Server error: ${response.data['message'] ?? response.data}',

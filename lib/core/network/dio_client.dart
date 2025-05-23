@@ -4,8 +4,8 @@ class DioClient {
   static Dio create() {
     final dio = Dio(
       BaseOptions(
-        baseUrl: 'http://10.163.2.238/vg/screenify/',
-        connectTimeout: Duration(seconds: 10),
+        baseUrl: 'http://192.168.137.22/screenify/',
+        connectTimeout: Duration(seconds: 30),
         receiveTimeout: Duration(seconds: 10),
         headers: {'Content-Type': 'application/json'},
       ),

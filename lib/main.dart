@@ -38,10 +38,21 @@ void main() async {
   // Set the database factory
   databaseFactory = databaseFactoryFfi;
 
-  // Set window to full screen
-  windowManager.waitUntilReadyToShow().then((_) async {
-    await windowManager.setFullScreen(true);
-  });
-
+  // Start the app first, then configure window
   runApp(const MyApp());
+
+  // Configure window after app starts
+  windowManager.waitUntilReadyToShow().then((_) async {
+    await windowManager.show();
+    await windowManager.focus();
+
+    // Set fullscreen after window is shown
+    try {
+      await windowManager.setFullScreen(true);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error setting fullscreen: $e');
+      }
+    }
+  });
 }
